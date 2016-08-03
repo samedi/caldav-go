@@ -42,6 +42,7 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   switch request.Method {
   case "GET": HandleGET(writer, request)
   case "PUT": HandlePUT(writer, request)
+  case "DELETE": HandleDELETE(writer, request)
   }
 }
 
@@ -76,6 +77,26 @@ func HandlePUT(writer http.ResponseWriter, request *http.Request) {
 
   // Responds
   io.WriteString(writer, event)
+}
+
+func HandleDELETE(writer http.ResponseWriter, request *http.Request) {
+  // Logs
+  fmt.Printf("\n== DELETE REQUEST ==\n%s", request)
+
+  // Core
+  event_id := ExtractEventID(request.URL.Path)
+  event, found := events_map[event_id]
+
+  // Responds
+  if found {
+      fmt.Printf("\n== FOUND EVENT ==\n%s\n\n", event)
+      delete(events_map, event_id)
+      fmt.Println("\n== EVENT DELETED ==\n\n")
+
+      io.WriteString(writer, event)
+  } else {
+      http.NotFound(writer, request)
+  }
 }
 
 // Extracts the event ID from the request's URL path
