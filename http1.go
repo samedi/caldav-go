@@ -137,10 +137,112 @@ func HandleOPTIONS(writer http.ResponseWriter, request *http.Request, requestBod
 // =============== REPORT BEGIN ====================================
 
 func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
-  
+  // TODO: HANDLE FILTERS, DEPTH
+
+  type XMLProp struct {
+    Tags []xml.Name `xml:",any"`
+  }
+
+  type XMLRoot struct {
+    XMLName xml.Name
+    Prop    XMLProp  `xml:"DAV: prop"`
+    Hrefs   []string `xml:"DAV: href"`
+  }
+
+  // read body string to xml struct
+  var requestXML XMLRoot
+  xml.Unmarshal([]byte(requestBody), &requestXML)
+
+  // declare props and other stuff that will be checked/used later
+  etagProp := xml.Name{Space:"DAV:", Local:"getetag"}
+  dataProp := xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}
+  emptyEvent := CalendarEvent{}
+
+  // init response
+  var response bytes.Buffer
+  response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+  response.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">`)
+
+  // The hrefs can come from request URL (in this will be only one) or from the request body itself.
+  // The one in the URL will have priority (see rfc4791#section-7.9).
+  var reportHrefs []string
+  if extractEventID(request.URL.Path) != "" {
+    reportHrefs = []string{request.URL.Path}
+  } else {
+    reportHrefs = requestXML.Hrefs
+  }
+
+  // iterate over event hrefs and build response xml on the fly
+  for _, href := range reportHrefs {
+    response.WriteString("<D:response>")
+    response.WriteString(fmt.Sprintf("<D:href>%s</D:href>", href))
+
+    eventID := extractEventID(href)
+    event   := eventsStorage[eventID]
+
+    if event == emptyEvent {
+      // if does not find the event set 404
+      response.WriteString("<D:status>HTTP/1.1 404 Not Found</D:status>")
+    } else {
+      // if it finds the event, proceed on checking each prop against it
+      foundProps     := []string{}
+      notFoundProps  := []string{}
+
+      for _, prop := range requestXML.Prop.Tags {
+        if prop == etagProp {
+          foundProps = append(foundProps, xmlTag(etagProp, event.Etag))
+        } else if prop == dataProp {
+          foundProps = append(foundProps, xmlTag(dataProp, event.Content))
+        } else {
+          notFoundProps = append(notFoundProps, xmlTag(prop, ""))
+        }
+      }
+
+      if len(foundProps) > 0 {
+        response.WriteString("<D:propstat>")
+        response.WriteString("<D:prop>")
+        for _, propTag := range foundProps {
+          response.WriteString(propTag)
+        }
+        response.WriteString("</D:prop>")
+        response.WriteString("<D:status>HTTP/1.1 200 OK</D:status>")
+        response.WriteString("</D:propstat>")
+      }
+
+      if len(notFoundProps) > 0 {
+        response.WriteString("<D:propstat>")
+        response.WriteString("<D:prop>")
+        for _, propTag := range notFoundProps {
+          response.WriteString(propTag)
+        }
+        response.WriteString("</D:prop>")
+        response.WriteString("<D:status>HTTP/1.1 404 Not Found</D:status>")
+        response.WriteString("</D:propstat>")
+      }
+    }
+    response.WriteString("</D:response>")
+  }
+  response.WriteString("</D:multistatus>")
+
+  respond(207, response.String(), writer)
 }
 
+func xmlTag(xmlName xml.Name, content string) string {
+  name := xmlName.Local
+  ns  := ""
+  switch xmlName.Space {
+  case "DAV:":
+      ns = "D:"
+  case "urn:ietf:params:xml:ns:caldav":
+      ns = "C:"
+  }
 
+  if content != "" {
+    return fmt.Sprintf("<%s%s>%s</%s%s>", ns, name, content, ns, name)
+  } else {
+    return fmt.Sprintf("<%s%s/>", ns, name)
+  }
+}
 
 // =============== REPORT END ====================================
 
