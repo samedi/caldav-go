@@ -68,23 +68,25 @@ func HandlePUT(writer http.ResponseWriter, request *http.Request, requestBody st
 }
 
 func HandleDELETE(writer http.ResponseWriter, request *http.Request) {
-  // Logs
-  // fmt.Printf("\n== DELETE REQUEST ==\n%s", request)
-  //
-  // // Core
-  // event_id := ExtractEventID(request.URL.Path)
-  // event, found := events_map[event_id]
-  //
-  // // Responds
-  // if found {
-  //     fmt.Printf("\n== FOUND EVENT ==\n%s\n\n", event)
-  //     delete(events_map, event_id)
-  //     fmt.Println("\n== EVENT DELETED ==\n\n")
-  //
-  //     io.WriteString(writer, event)
-  // } else {
-  //     http.NotFound(writer, request)
-  // }
+  // TODO: Handle delete on collections
+
+  // get the event from the storage
+  eventID := extractEventID(request.URL.Path)
+  event, found := eventsStorage[eventID]
+
+  if found {
+    // check etag pre-condition
+    etagMatch := request.Header["If-Match"]
+    if !(len(etagMatch) == 0 || etagMatch[0] == "*" || etagMatch[0] == event.Etag) {
+      respond(412, "", writer) // Error: Pre-condition failed
+      return
+    }
+    // delete event if pre-condition passes
+    delete(eventsStorage, eventID)
+    respond(204, "", writer) // Success: No Content
+  } else {
+    respond(404, "", writer) // Error: Not Found
+  }
 }
 
 func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBody string)  {
