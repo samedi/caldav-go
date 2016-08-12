@@ -30,10 +30,12 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
 
   logRequest(request, requestBody)
 
+  precond := RequestPreconditions{request}
+
   switch request.Method {
   // case "GET": HandleGET(writer, request)
-  case "PUT": HandlePUT(writer, request, requestBody)
-  case "DELETE": HandleDELETE(writer, request)
+  case "PUT": HandlePUT(writer, request, precond, requestBody)
+  case "DELETE": HandleDELETE(writer, request, precond)
   case "PROPFIND": HandlePROPFIND(writer, request, requestBody)
   case "OPTIONS": HandleOPTIONS(writer, request, requestBody)
   case "REPORT": HandleREPORT(writer, request, requestBody)
@@ -57,17 +59,46 @@ func HandleGET(writer http.ResponseWriter, request *http.Request) {
   // }
 }
 
-func HandlePUT(writer http.ResponseWriter, request *http.Request, requestBody string) {
-  // Core
-  eventID := extractEventID(request.URL.Path)
-  event   := CalendarEvent{Content: requestBody, Etag: hash(requestBody)}
-  eventsStorage[eventID] = event
+// =============== PUT BEGIN ====================================
 
-  // Responds
-  respond(201, "", writer)
+func HandlePUT(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions, requestBody string) {
+  // TODO: Handle PUT on collections
+
+  // get the event from the storage
+  eventID := extractEventID(request.URL.Path)
+  event, found := eventsStorage[eventID]
+
+  // PUT is allowed in 2 cases:
+  //
+  // 1. Item NOT FOUND and there is NO ETAG match header: CREATE a new item
+  if !found && !precond.IfMatchPresent() {
+    // create new item
+    newEvent := CalendarEvent{Content: requestBody, Etag: hash(requestBody)}
+    eventsStorage[eventID] = newEvent
+
+    writer.Header().Set("ETag", newEvent.Etag)
+    respond(201, "", writer) // Success: CREATED
+    return
+  }
+
+  // 2. Item exists, the event etag is verified and there's no IF-NONE-MATCH=* header: UPDATE the item
+  if found && precond.IfMatch(event.Etag) && !precond.IfNoneMatch("*") {
+    // update event
+    event.Content = requestBody
+    event.Etag = hash(requestBody)
+    eventsStorage[eventID] = event
+
+    writer.Header().Set("ETag", event.Etag)
+    respond(201, "", writer) // Success: CREATED
+    return
+  }
+
+  respond(412, "", writer) // Error: Pre-condition failed
 }
 
-func HandleDELETE(writer http.ResponseWriter, request *http.Request) {
+// =============== PUT END ====================================
+
+func HandleDELETE(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions) {
   // TODO: Handle delete on collections
 
   // get the event from the storage
@@ -76,11 +107,11 @@ func HandleDELETE(writer http.ResponseWriter, request *http.Request) {
 
   if found {
     // check etag pre-condition
-    etagMatch := request.Header["If-Match"]
-    if !(len(etagMatch) == 0 || etagMatch[0] == "*" || etagMatch[0] == event.Etag) {
+    if !precond.IfMatch(event.Etag) {
       respond(412, "", writer) // Error: Pre-condition failed
       return
     }
+
     // delete event if pre-condition passes
     delete(eventsStorage, eventID)
     respond(204, "", writer) // Success: No Content
@@ -252,6 +283,24 @@ func xmlTag(xmlName xml.Name, content string) string {
 
 
 // =============== OTHERS ====================================
+
+type RequestPreconditions struct {
+  request *http.Request
+}
+
+func (p *RequestPreconditions) IfMatch(etag string) bool {
+  etagMatch := p.request.Header["If-Match"]
+  return len(etagMatch) == 0 || etagMatch[0] == "*" || etagMatch[0] == etag
+}
+
+func (p *RequestPreconditions) IfMatchPresent() bool {
+  return len(p.request.Header["If-Match"]) != 0
+}
+
+func (p *RequestPreconditions) IfNoneMatch(value string) bool {
+  valueMatch := p.request.Header["If-None-Match"]
+  return len(valueMatch) == 1 && valueMatch[0] == value
+}
 
 func readRequestBody(request *http.Request) string {
   body, _ := ioutil.ReadAll(request.Body)
