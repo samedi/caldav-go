@@ -36,8 +36,8 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   // case "GET": HandleGET(writer, request)
   case "PUT": HandlePUT(writer, request, precond, requestBody)
   case "DELETE": HandleDELETE(writer, request, precond)
-  case "PROPFIND": HandlePROPFIND(writer, request, requestBody)
-  case "OPTIONS": HandleOPTIONS(writer, request, requestBody)
+  // case "PROPFIND": HandlePROPFIND(writer, request, requestBody)
+  // case "OPTIONS": HandleOPTIONS(writer, request, requestBody)
   case "REPORT": HandleREPORT(writer, request, requestBody)
   }
 }
@@ -59,8 +59,6 @@ func HandleGET(writer http.ResponseWriter, request *http.Request) {
   // }
 }
 
-// =============== PUT BEGIN ====================================
-
 func HandlePUT(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions, requestBody string) {
   // TODO: Handle PUT on collections
 
@@ -77,7 +75,7 @@ func HandlePUT(writer http.ResponseWriter, request *http.Request, precond Reques
     eventsStorage[eventID] = newEvent
 
     writer.Header().Set("ETag", newEvent.Etag)
-    respond(201, "", writer) // Success: CREATED
+    respond(http.StatusCreated, "", writer)
     return
   }
 
@@ -89,14 +87,12 @@ func HandlePUT(writer http.ResponseWriter, request *http.Request, precond Reques
     eventsStorage[eventID] = event
 
     writer.Header().Set("ETag", event.Etag)
-    respond(201, "", writer) // Success: CREATED
+    respond(http.StatusCreated, "", writer)
     return
   }
 
-  respond(412, "", writer) // Error: Pre-condition failed
+  respond(http.StatusPreconditionFailed, "", writer)
 }
-
-// =============== PUT END ====================================
 
 func HandleDELETE(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions) {
   // TODO: Handle delete on collections
@@ -108,15 +104,15 @@ func HandleDELETE(writer http.ResponseWriter, request *http.Request, precond Req
   if found {
     // check etag pre-condition
     if !precond.IfMatch(event.Etag) {
-      respond(412, "", writer) // Error: Pre-condition failed
+      respond(http.StatusPreconditionFailed, "", writer)
       return
     }
 
     // delete event if pre-condition passes
     delete(eventsStorage, eventID)
-    respond(204, "", writer) // Success: No Content
+    respond(http.StatusNoContent, "", writer)
   } else {
-    respond(404, "", writer) // Error: Not Found
+    respond(http.StatusNotFound, "", writer)
   }
 }
 
@@ -144,30 +140,28 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
   //
   // io.WriteString(writer, buffer.String())
 
-  expRequestBody := `<?xml version="1.0" encoding="UTF-8"?><D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav"><D:prop><D:resourcetype/><D:owner/><D:current-user-principal/><D:supported-report-set/><C:supported-calendar-component-set/><CS:getctag/></D:prop></D:propfind>`
-  responseBody := `<?xml version="1.0"?><multistatus xmlns="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/"><response><href>/user/calendar</href><propstat><prop><resourcetype><C:calendar /><collection /></resourcetype><owner>/user/</owner><supported-report-set><supported-report><report>principal-property-search</report></supported-report><supported-report><report>sync-collection</report></supported-report><supported-report><report>expand-property</report></supported-report><supported-report><report>principal-search-property-set</report></supported-report></supported-report-set><C:supported-calendar-component-set><C:comp name="VTODO" /><C:comp name="VEVENT" /><C:comp name="VJOURNAL" /></C:supported-calendar-component-set><CS:getctag>"b9cf1a7cd5507061d91993409ba61a81"</CS:getctag></prop><status>HTTP/1.1 200 OK</status></propstat><propstat><prop><current-user-principal /></prop><status>HTTP/1.1 404 Not Found</status></propstat></response></multistatus>`
-
-  if request.URL.Path == "/user/calendar/" && hash(requestBody) == hash(expRequestBody) {
-    respond(207, responseBody, writer)
-  } else {
-    expRequestBody = `<?xml version="1.0" encoding="UTF-8"?><D:propfind xmlns:D="DAV:"><D:prop><D:getcontenttype/><D:resourcetype/><D:getetag/></D:prop></D:propfind>`
-    responseBody = `<?xml version="1.0"?> <multistatus xmlns="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav"> <response> <href>/user/calendar</href> <propstat> <prop> <getcontenttype>text/calendar</getcontenttype> <resourcetype> <C:calendar /> <collection /> </resourcetype> <getetag>"b9cf1a7cd5507061d91993409ba61a81"</getetag> </prop> <status>HTTP/1.1 200 OK</status> </propstat> </response> <response> <href>/user/calendar/9b91abda-3b47-434e-9fc7-01cf841de175.ics</href> <propstat> <prop> <getcontenttype>text/calendar; component=vcalendar</getcontenttype> <resourcetype /> <getetag>"5ecc95ff25345aecd462052f7bb3d80a"</getetag> </prop> <status>HTTP/1.1 200 OK</status> </propstat> </response> </multistatus>`
-
-    if request.URL.Path == "/user/calendar/" && hash(requestBody) == hash(expRequestBody) {
-      respond(207, responseBody, writer)
-    }
-  }
+  // expRequestBody := `<?xml version="1.0" encoding="UTF-8"?><D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav"><D:prop><D:resourcetype/><D:owner/><D:current-user-principal/><D:supported-report-set/><C:supported-calendar-component-set/><CS:getctag/></D:prop></D:propfind>`
+  // responseBody := `<?xml version="1.0"?><multistatus xmlns="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/"><response><href>/user/calendar</href><propstat><prop><resourcetype><C:calendar /><collection /></resourcetype><owner>/user/</owner><supported-report-set><supported-report><report>principal-property-search</report></supported-report><supported-report><report>sync-collection</report></supported-report><supported-report><report>expand-property</report></supported-report><supported-report><report>principal-search-property-set</report></supported-report></supported-report-set><C:supported-calendar-component-set><C:comp name="VTODO" /><C:comp name="VEVENT" /><C:comp name="VJOURNAL" /></C:supported-calendar-component-set><CS:getctag>"b9cf1a7cd5507061d91993409ba61a81"</CS:getctag></prop><status>HTTP/1.1 200 OK</status></propstat><propstat><prop><current-user-principal /></prop><status>HTTP/1.1 404 Not Found</status></propstat></response></multistatus>`
+  //
+  // if request.URL.Path == "/user/calendar/" && hash(requestBody) == hash(expRequestBody) {
+  //   respond(207, responseBody, writer)
+  // } else {
+  //   expRequestBody = `<?xml version="1.0" encoding="UTF-8"?><D:propfind xmlns:D="DAV:"><D:prop><D:getcontenttype/><D:resourcetype/><D:getetag/></D:prop></D:propfind>`
+  //   responseBody = `<?xml version="1.0"?> <multistatus xmlns="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav"> <response> <href>/user/calendar</href> <propstat> <prop> <getcontenttype>text/calendar</getcontenttype> <resourcetype> <C:calendar /> <collection /> </resourcetype> <getetag>"b9cf1a7cd5507061d91993409ba61a81"</getetag> </prop> <status>HTTP/1.1 200 OK</status> </propstat> </response> <response> <href>/user/calendar/9b91abda-3b47-434e-9fc7-01cf841de175.ics</href> <propstat> <prop> <getcontenttype>text/calendar; component=vcalendar</getcontenttype> <resourcetype /> <getetag>"5ecc95ff25345aecd462052f7bb3d80a"</getetag> </prop> <status>HTTP/1.1 200 OK</status> </propstat> </response> </multistatus>`
+  //
+  //   if request.URL.Path == "/user/calendar/" && hash(requestBody) == hash(expRequestBody) {
+  //     respond(207, responseBody, writer)
+  //   }
+  // }
 }
 
 func HandleOPTIONS(writer http.ResponseWriter, request *http.Request, requestBody string) {
-  expRequestBody := ""
-
-  if request.URL.Path == "/user/" && hash(requestBody) == hash(expRequestBody) {
-    respond(200, "", writer)
-  }
+  // expRequestBody := ""
+  //
+  // if request.URL.Path == "/user/" && hash(requestBody) == hash(expRequestBody) {
+  //   respond(200, "", writer)
+  // }
 }
-
-// =============== REPORT BEGIN ====================================
 
 func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
   // TODO: HANDLE FILTERS, DEPTH
@@ -257,30 +251,8 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
   }
   response.WriteString("</D:multistatus>")
 
-  respond(207, response.String(), writer)
+  respond(207, response.String(), writer) // Multi-Status
 }
-
-func xmlTag(xmlName xml.Name, content string) string {
-  name := xmlName.Local
-  ns  := ""
-  switch xmlName.Space {
-  case "DAV:":
-      ns = "D:"
-  case "urn:ietf:params:xml:ns:caldav":
-      ns = "C:"
-  }
-
-  if content != "" {
-    return fmt.Sprintf("<%s%s>%s</%s%s>", ns, name, content, ns, name)
-  } else {
-    return fmt.Sprintf("<%s%s/>", ns, name)
-  }
-}
-
-// =============== REPORT END ====================================
-
-
-
 
 // =============== OTHERS ====================================
 
@@ -343,4 +315,21 @@ func hash(s string) string {
   s = strings.Replace(s, "\r", "", -1)
   hash := md5.Sum([]byte(s))
   return hex.EncodeToString(hash[:])
+}
+
+func xmlTag(xmlName xml.Name, content string) string {
+  name := xmlName.Local
+  ns  := ""
+  switch xmlName.Space {
+  case "DAV:":
+      ns = "D:"
+  case "urn:ietf:params:xml:ns:caldav":
+      ns = "C:"
+  }
+
+  if content != "" {
+    return fmt.Sprintf("<%s%s>%s</%s%s>", ns, name, content, ns, name)
+  } else {
+    return fmt.Sprintf("<%s%s/>", ns, name)
+  }
 }
