@@ -33,7 +33,7 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   precond := RequestPreconditions{request}
 
   switch request.Method {
-  // case "GET": HandleGET(writer, request)
+  case "GET": HandleGET(writer, request)
   case "PUT": HandlePUT(writer, request, precond, requestBody)
   case "DELETE": HandleDELETE(writer, request, precond)
   // case "PROPFIND": HandlePROPFIND(writer, request, requestBody)
@@ -43,20 +43,18 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func HandleGET(writer http.ResponseWriter, request *http.Request) {
-  // Logs
-  // fmt.Printf("\n== GET REQUEST ==\n%s\n\n", request)
-  //
-  // // Core
-  // event_id := ExtractEventID(request.URL.Path)
-  // event, found := events_map[event_id]
-  //
-  // // Responds
-  // if found {
-  //     fmt.Printf("\n== FOUND EVENT ==\n%s\n\n", event)
-  //     io.WriteString(writer, event)
-  // } else {
-  //     http.NotFound(writer, request)
-  // }
+  // TODO: Handle GET on collections
+
+  // get the event from the storage
+  eventID := extractEventID(request.URL.Path)
+  event, found := eventsStorage[eventID]
+
+  if found {
+    writer.Header().Set("ETag", event.Etag)
+    respond(http.StatusOK, event.Content, writer)
+  } else {
+    respond(http.StatusNotFound, "", writer)
+  }
 }
 
 func HandlePUT(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions, requestBody string) {
@@ -279,13 +277,15 @@ func readRequestBody(request *http.Request) string {
   return string(body)
 }
 
-func logRequest(request *http.Request, requestBody string) {
+func logRequest(request *http.Request, body string) {
   fmt.Printf("\n** %s REQUEST: %s **", request.Method, request.URL.Path)
   fmt.Printf("\nRequest headers:\n")
   for hkey, hvalue := range request.Header {
     fmt.Printf("%s: %s\n", hkey, hvalue)
   }
-  fmt.Printf("\nRequest content:\n%s\n", gohtml.Format(requestBody))
+  if body != "" {
+    fmt.Printf("\nRequest content:\n%s\n", gohtml.Format(body))
+  }
 }
 
 // Extracts the event ID from the request's URL path
