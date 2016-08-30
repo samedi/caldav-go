@@ -13,7 +13,8 @@ import (
   "github.com/yosssi/gohtml"
   "encoding/xml"
 
-  "caldav/lib"
+  "caldav/data"
+  "caldav/ixml"
 )
 
 // Supported ICal components.
@@ -133,7 +134,7 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
     for _, content := range pv.Contents {
       pv.Content += content
     }
-    xmlString := xmlTag(pv.Tag, pv.Content)
+    xmlString := ixml.Tag(pv.Tag, pv.Content)
     return xmlString
   }
 
@@ -264,7 +265,7 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
         response.WriteString(propToXML(prop))
       }
       response.WriteString("</D:prop>")
-      response.WriteString(fmt.Sprintf("<D:status>%d</D:status>", status))
+      response.WriteString(ixml.StatusTag(status))
       response.WriteString("</D:propstat>")
     }
 
@@ -329,7 +330,7 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
 
     if event == emptyEvent {
       // if does not find the event set 404
-      response.WriteString("<D:status>HTTP/1.1 404 Not Found</D:status>")
+      response.WriteString(ixml.StatusTag(http.StatusNotFound))
     } else {
       // if it finds the event, proceed on checking each prop against it
       foundProps     := []string{}
@@ -337,11 +338,11 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
 
       for _, prop := range requestXML.Prop.Tags {
         if prop == etagProp {
-          foundProps = append(foundProps, xmlTag(etagProp, event.Etag))
+          foundProps = append(foundProps, ixml.Tag(etagProp, event.Etag))
         } else if prop == dataProp {
-          foundProps = append(foundProps, xmlTag(dataProp, event.Content))
+          foundProps = append(foundProps, ixml.Tag(dataProp, event.Content))
         } else {
-          notFoundProps = append(notFoundProps, xmlTag(prop, ""))
+          notFoundProps = append(notFoundProps, ixml.Tag(prop, ""))
         }
       }
 
@@ -352,7 +353,7 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
           response.WriteString(propTag)
         }
         response.WriteString("</D:prop>")
-        response.WriteString("<D:status>HTTP/1.1 200 OK</D:status>")
+        response.WriteString(ixml.StatusTag(http.StatusOK))
         response.WriteString("</D:propstat>")
       }
 
@@ -363,7 +364,7 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
           response.WriteString(propTag)
         }
         response.WriteString("</D:prop>")
-        response.WriteString("<D:status>HTTP/1.1 404 Not Found</D:status>")
+        response.WriteString(ixml.StatusTag(http.StatusNotFound))
         response.WriteString("</D:propstat>")
       }
     }
@@ -460,21 +461,4 @@ func hash(s string) string {
   s = strings.Replace(s, "\r", "", -1)
   hash := md5.Sum([]byte(s))
   return hex.EncodeToString(hash[:])
-}
-
-func xmlTag(xmlName xml.Name, content string) string {
-  name := xmlName.Local
-  ns  := ""
-  switch xmlName.Space {
-  case "DAV:":
-      ns = "D:"
-  case "urn:ietf:params:xml:ns:caldav":
-      ns = "C:"
-  }
-
-  if content != "" {
-    return fmt.Sprintf("<%s%s>%s</%s%s>", ns, name, content, ns, name)
-  } else {
-    return fmt.Sprintf("<%s%s/>", ns, name)
-  }
 }
