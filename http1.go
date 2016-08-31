@@ -160,24 +160,15 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
     return xmlString
   }
 
-  // This is the response of the `propfind` function. It includes all the
-  // props processed for a given target resource.
-  type Propfind struct {
-    // The target resource path. Ex: /user/calendars/c1.ics
-    Href  string
-    // The set of props (PropValue) processed. Each prop is mapped to a HTTP status code.
-    // So if a prop is found and processed ok, it'll be mapped to 200. If it's not found,
-    // it'll be mapped to 404, and so on.
-    Props map[int][]PropValue
-  }
-
   // Function that processes all the required props for a given resource.
   // ## Params
   // resource: the target calendar resource.
   // reqprops: set of required props that must be processed for the resource.
   // ## Returns
-  // A `Propfind` struct.
-  propfind := func(resource data.Resource, reqprops []xml.Name) Propfind {
+  // The set of props (PropValue) processed. Each prop is mapped to a HTTP status code.
+  // So if a prop is found and processed ok, it'll be mapped to 200. If it's not found,
+  // it'll be mapped to 404, and so on.
+  propfind := func(resource *data.Resource, reqprops []xml.Name) map[int][]PropValue {
     result := make(map[int][]PropValue)
 
     for _, ptag := range reqprops {
@@ -239,10 +230,7 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
       result[pvalue.Status] = append(result[pvalue.Status], pvalue)
     }
 
-    return Propfind {
-      Href: resource.Path,
-      Props:  result,
-    }
+    return result
   }
 
   // get the target resources based on the request URL
@@ -275,12 +263,12 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
 
   // for each resource, fetch the requested props and build the response
   for _, resource := range resources {
-    pf := propfind(resource, requestXML.Prop.Tags)
-
     response.WriteString("<D:response>")
-    response.WriteString(fmt.Sprintf("<D:href>%s</D:href>", pf.Href))
+    response.WriteString(fmt.Sprintf("<D:href>%s</D:href>", resource.Path))
 
-    for status, props := range pf.Props {
+    propsMap := propfind(&resource, requestXML.Prop.Tags)
+
+    for status, props := range propsMap {
       response.WriteString("<D:propstat>")
       response.WriteString("<D:prop>")
       for _, prop := range props {
