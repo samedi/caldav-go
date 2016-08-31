@@ -44,7 +44,7 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   case "PUT": HandlePUT(writer, request, precond, requestBody)
   case "DELETE": HandleDELETE(writer, request, precond)
   case "PROPFIND": HandlePROPFIND(writer, request, requestBody, nil)
-  // case "OPTIONS": HandleOPTIONS(writer, request, requestBody)
+  case "OPTIONS": HandleOPTIONS(writer, request)
   case "REPORT": HandleREPORT(writer, request, requestBody)
   }
 }
@@ -298,12 +298,17 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
   respond(207, response.String(), writer) // Multi-Status
 }
 
-func HandleOPTIONS(writer http.ResponseWriter, request *http.Request, requestBody string) {
-  // expRequestBody := ""
-  //
-  // if request.URL.Path == "/user/" && hash(requestBody) == hash(expRequestBody) {
-  //   respond(200, "", writer)
-  // }
+// Returns the allowed methods and the DAV features implemented by the current server.
+// For more information about the values and format read RFC4918 Sections 10.1 and 18.
+func HandleOPTIONS(writer http.ResponseWriter, request *http.Request) {
+  writer.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS, PROPFIND, REPORT")
+  // Set the DAV compliance header:
+  // 1: Server supports all the requirements specified in RFC2518
+  // 3: Server supports all the revisions specified in RFC4918
+  // calendar-access: Server supports all the extensions specified in RFC4791
+  writer.Header().Set("DAV", "1, 3, calendar-access")
+
+  respond(http.StatusOK, "", writer)
 }
 
 func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
@@ -472,9 +477,15 @@ func respond(status int, body string, writer http.ResponseWriter) {
   if body != "" {
     fmt.Printf("\nResponse content:\n%s\n", gohtml.Format(body))
   }
-  fmt.Printf("\nAnswer status: %d %s\n\n", status, http.StatusText(status))
+
+  fmt.Printf("\nResponse headers:\n")
+  for hkey, hvalue := range writer.Header() {
+    fmt.Printf("%s: %s\n", hkey, hvalue)
+  }
 
   writer.WriteHeader(status)
+  fmt.Printf("\nAnswer status: %d %s\n\n", status, http.StatusText(status))
+
   io.WriteString(writer, body)
 }
 
