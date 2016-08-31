@@ -271,7 +271,7 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
   // init response
   var response bytes.Buffer
   response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-  response.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">`)
+  response.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
 
   // for each resource, fetch the requested props and build the response
   for _, resource := range resources {
@@ -331,7 +331,7 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
   // init response
   var response bytes.Buffer
   response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-  response.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">`)
+  response.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
 
   // The hrefs can come from the request URL (in this case will be only one) or from the request body itself.
   // The one in the URL will have priority (see rfc4791#section-7.9).

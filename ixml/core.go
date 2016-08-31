@@ -6,6 +6,10 @@ import (
   "encoding/xml"
 )
 
+func Namespaces() string {
+  return `xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/"`
+}
+
 func Tag(xmlName xml.Name, content string) string {
   name := xmlName.Local
   ns  := ""
@@ -14,6 +18,8 @@ func Tag(xmlName xml.Name, content string) string {
       ns = "D:"
   case "urn:ietf:params:xml:ns:caldav":
       ns = "C:"
+  case "http://calendarserver.org/ns/":
+      ns = "CS:"
   }
 
   if content != "" {
