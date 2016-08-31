@@ -300,7 +300,52 @@ func HandleOPTIONS(writer http.ResponseWriter, request *http.Request) {
 }
 
 func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
-  // TODO: HANDLE FILTERS, DEPTH
+  // TODO: HANDLE FILTERS, DEPTH, COLLECTIONS
+
+  type PropValue struct {
+    Tag      xml.Name
+    Content  string
+    Contents []string
+    Status   int
+  }
+
+  propToXML := func(pv PropValue) string {
+    for _, content := range pv.Contents {
+      pv.Content += content
+    }
+    xmlString := ixml.Tag(pv.Tag, pv.Content)
+    return xmlString
+  }
+
+  report := func(resource *data.Resource, reqprops []xml.Name) map[int][]PropValue {
+    result := make(map[int][]PropValue)
+
+    for _, ptag := range reqprops {
+      pvalue := PropValue{
+        Tag: ptag,
+        Status: http.StatusOK,
+      }
+
+      pfound := false
+
+      switch ptag {
+      case xml.Name{Space:"DAV:", Local:"getetag"}:
+        pvalue.Content, pfound = resource.GetEtag()
+      case xml.Name{Space: "DAV:", Local: "getcontenttype"}:
+        pvalue.Content, pfound = resource.GetContentType()
+      case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}:
+        pvalue.Content, pfound = resource.GetData()
+      }
+
+      if !pfound {
+        pvalue.Status = http.StatusNotFound
+      }
+
+      result[pvalue.Status] = append(result[pvalue.Status], pvalue)
+    }
+
+    return result
+  }
 
   type XMLProp struct {
     Tags []xml.Name `xml:",any"`
@@ -316,18 +361,8 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
   var requestXML XMLRoot
   xml.Unmarshal([]byte(requestBody), &requestXML)
 
-  // declare props and other stuff that will be checked/used later
-  etagProp := xml.Name{Space:"DAV:", Local:"getetag"}
-  dataProp := xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}
-  emptyEvent := CalendarEvent{}
-
-  // init response
-  var response bytes.Buffer
-  response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-  response.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
-
   // The hrefs can come from the request URL (in this case will be only one) or from the request body itself.
-  // The one in the URL will have priority (see rfc4791#section-7.9).
+  // The one in the URL will have priority (see RFC4791#section-7.9).
   var reportHrefs []string
   if extractEventID(request.URL.Path) != "" {
     reportHrefs = []string{request.URL.Path}
@@ -335,53 +370,40 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
     reportHrefs = requestXML.Hrefs
   }
 
+  storage := new(data.FileStorage)
+
+  // init response
+  var response bytes.Buffer
+  response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+  response.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
+
   // iterate over event hrefs and build response xml on the fly
   for _, href := range reportHrefs {
+    resource, found, err := storage.GetResource(href)
+    if err != nil && err != data.ErrResourceNotFound {
+      respondWithError(err, writer)
+      return
+    }
+
     response.WriteString("<D:response>")
     response.WriteString(fmt.Sprintf("<D:href>%s</D:href>", href))
 
-    eventID := extractEventID(href)
-    event   := eventsStorage[eventID]
+    if found {
+      reportMap := report(resource, requestXML.Prop.Tags)
 
-    if event == emptyEvent {
-      // if does not find the event set 404
-      response.WriteString(ixml.StatusTag(http.StatusNotFound))
+      for status, props := range reportMap {
+        response.WriteString("<D:propstat>")
+        response.WriteString("<D:prop>")
+        for _, prop := range props {
+          response.WriteString(propToXML(prop))
+        }
+        response.WriteString("</D:prop>")
+        response.WriteString(ixml.StatusTag(status))
+        response.WriteString("</D:propstat>")
+      }
     } else {
-      // if it finds the event, proceed on checking each prop against it
-      foundProps     := []string{}
-      notFoundProps  := []string{}
-
-      for _, prop := range requestXML.Prop.Tags {
-        if prop == etagProp {
-          foundProps = append(foundProps, ixml.Tag(etagProp, event.Etag))
-        } else if prop == dataProp {
-          foundProps = append(foundProps, ixml.Tag(dataProp, event.Content))
-        } else {
-          notFoundProps = append(notFoundProps, ixml.Tag(prop, ""))
-        }
-      }
-
-      if len(foundProps) > 0 {
-        response.WriteString("<D:propstat>")
-        response.WriteString("<D:prop>")
-        for _, propTag := range foundProps {
-          response.WriteString(propTag)
-        }
-        response.WriteString("</D:prop>")
-        response.WriteString(ixml.StatusTag(http.StatusOK))
-        response.WriteString("</D:propstat>")
-      }
-
-      if len(notFoundProps) > 0 {
-        response.WriteString("<D:propstat>")
-        response.WriteString("<D:prop>")
-        for _, propTag := range notFoundProps {
-          response.WriteString(propTag)
-        }
-        response.WriteString("</D:prop>")
-        response.WriteString(ixml.StatusTag(http.StatusNotFound))
-        response.WriteString("</D:propstat>")
-      }
+      // if does not find the resource set 404
+      response.WriteString(ixml.StatusTag(http.StatusNotFound))
     }
     response.WriteString("</D:response>")
   }

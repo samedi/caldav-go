@@ -6,6 +6,7 @@ import (
   "path"
   "strings"
   "strconv"
+  "io/ioutil"
 )
 
 type Resource struct {
@@ -92,4 +93,19 @@ func (r *Resource) GetOwnerPath() (string, bool) {
   } else {
     return "", false
   }
+}
+
+func (r *Resource) GetData() (string, bool) {
+  if r.IsCollection() {
+    return "", false
+  }
+
+  pwd, _ := os.Getwd()
+  data, err := ioutil.ReadFile(pwd + r.Path)
+  if err != nil {
+    // TODO: Log error
+    return "", false
+  }
+
+  return string(data), true
 }
