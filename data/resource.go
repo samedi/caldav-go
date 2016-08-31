@@ -13,7 +13,6 @@ type Resource struct {
   Path string
   PathSplit []string
   File os.FileInfo
-  Owner string
   User *CalUser
 }
 
@@ -21,20 +20,11 @@ func NewResource(filePath string, fileInfo os.FileInfo) Resource {
   pClean  := path.Clean(filePath)
   pSplit  := strings.Split(strings.Trim(pClean, "/"), "/")
 
-  // owner is the parent collection
-  var owner string
-  if len(pSplit) > 1 {
-    owner = pSplit[0]
-  } else {
-    owner = ""
-  }
-
   return Resource{
     Name: fileInfo.Name(),
     Path: pClean,
     PathSplit: pSplit,
     File: fileInfo,
-    Owner: owner,
   }
 }
 
@@ -83,9 +73,22 @@ func (r *Resource) GetLastModified(format string) (string, bool) {
 	return r.File.ModTime().Format(format), true
 }
 
+func (r *Resource) GetOwner() (string, bool) {
+  var owner string
+  if len(r.PathSplit) > 1 {
+    owner = r.PathSplit[0]
+  } else {
+    owner = ""
+  }
+
+  return owner, true
+}
+
 func (r *Resource) GetOwnerPath() (string, bool) {
-  if r.Owner != "" {
-    return fmt.Sprintf("/%s/", r.Owner), true
+  owner, _ := r.GetOwner()
+
+  if owner != "" {
+    return fmt.Sprintf("/%s/", owner), true
   } else {
     return "", false
   }

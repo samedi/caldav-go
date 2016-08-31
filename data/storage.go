@@ -3,35 +3,37 @@ package data
 import (
   "os"
   "errors"
+  "strings"
 )
 
 var (
   ErrResourceNotFound = errors.New("caldav: resource not found")
+  ErrResourceAlreadyCreated = errors.New("caldav: resource already exists")
 )
 
 type Storage interface {
-  GetResources(path string, depth int) ([]Resource, error)
+  GetResources(rpath string, depth int) ([]Resource, error)
+  GetResource(rpath string) (Resource, error)
+  IsResourcePresent(rpath string) bool
+  CreateResource(content string) (Resource, error)
+  UpdateResource(rpath string, content string) (Resource, error)
 }
 
 type FileStorage struct {
 }
 
-func (fs *FileStorage) GetResources(path string, depth int, user *CalUser) ([]Resource, error) {
+func (fs *FileStorage) GetResources(rpath string, depth int, user *CalUser) ([]Resource, error) {
   result := []Resource{}
 
   // tries to open the file by the given path
-  pwd, _ := os.Getwd()
-  f, e := os.Open(pwd + path)
+  f, e := fs.openResourceFile(rpath)
   if e != nil {
-    if os.IsNotExist(e) {
-			return nil, ErrResourceNotFound
-		}
 		return nil, e
   }
 
   // add it as a resource to the result list
   finfo, _ := f.Stat()
-  resource := NewResource(path, finfo)
+  resource := NewResource(rpath, finfo)
   resource.User = user
   result = append(result, resource)
 
@@ -39,11 +41,93 @@ func (fs *FileStorage) GetResources(path string, depth int, user *CalUser) ([]Re
   if depth == 1 && finfo.IsDir() {
     files, _ := f.Readdir(0)
     for _, finfo := range files {
-      resource = NewResource(path + finfo.Name(), finfo)
+      resource = NewResource(rpath + finfo.Name(), finfo)
       resource.User = user
       result = append(result, resource)
     }
   }
 
   return result, nil
+}
+
+func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
+  resources, err := fs.GetResources(rpath, 0, nil)
+
+  if err != nil {
+    return nil, false, err
+  }
+
+  if resources == nil || len(resources) == 0 {
+    return nil, false, ErrResourceNotFound
+  }
+
+  res := resources[0]
+  return &res, true, nil
+}
+
+func (fs *FileStorage) IsResourcePresent(rpath string) bool {
+  _, found, _ := fs.GetResource(rpath)
+
+  return found
+}
+
+func (fs *FileStorage) CreateResource(rpath string, content string) (*Resource, error) {
+  pwd, _ := os.Getwd()
+  rFullPath := pwd + rpath
+
+  if fs.IsResourcePresent(rFullPath) {
+    return nil, ErrResourceAlreadyCreated
+  }
+
+  // create parent directories (if needed)
+  parentDirs, _ := fs.splitParentDirs(rFullPath)
+  if err := os.MkdirAll(parentDirs, os.ModePerm); err != nil {
+    return nil, err
+  }
+
+  // create file/resource and write content
+  f, err := os.Create(rFullPath)
+  if err != nil {
+    return nil, err
+  }
+  f.WriteString(content)
+
+  finfo, _ := f.Stat()
+  res := NewResource(rpath, finfo)
+  return &res, nil
+}
+
+func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, error) {
+  f, e := fs.openResourceFile(rpath)
+  if e != nil {
+		return nil, e
+  }
+
+  // update content
+  f.Truncate(0)
+  f.WriteString(content)
+
+  finfo, _ := f.Stat()
+  res := NewResource(rpath, finfo)
+  return &res, nil
+}
+
+func (fs *FileStorage) openResourceFile(filepath string) (*os.File, error) {
+  pwd, _ := os.Getwd()
+  f, e := os.OpenFile(pwd + filepath, os.O_RDWR, 0666)
+  if e != nil {
+    if os.IsNotExist(e) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, e
+  }
+
+  return f, nil
+}
+
+func (fs *FileStorage) splitParentDirs(filepath string) (parents, filename string) {
+  members := strings.Split(filepath, "/")
+  parents = strings.Join(members[:len(members)-1], "/")
+  filename = members[len(members)-1]
+  return
 }

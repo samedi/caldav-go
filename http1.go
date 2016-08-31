@@ -65,33 +65,55 @@ func HandleGET(writer http.ResponseWriter, request *http.Request) {
 }
 
 func HandlePUT(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions, requestBody string) {
-  // TODO: Handle PUT on collections
+  storage := new(data.FileStorage)
+  success := false
 
-  // get the event from the storage
-  eventID := extractEventID(request.URL.Path)
-  event, found := eventsStorage[eventID]
+  // check if resource exists
+  resourcePath := request.URL.Path
+  resource, found, err := storage.GetResource(resourcePath)
+  if err != nil && err != data.ErrResourceNotFound {
+    respondWithError(err, writer)
+    return
+  }
 
   // PUT is allowed in 2 cases:
   //
   // 1. Item NOT FOUND and there is NO ETAG match header: CREATE a new item
   if !found && !precond.IfMatchPresent() {
-    // create new item
-    newEvent := CalendarEvent{Content: requestBody, Etag: hash(requestBody)}
-    eventsStorage[eventID] = newEvent
+    // create new event resource
+    resource, err = storage.CreateResource(resourcePath, requestBody)
+    if err != nil {
+      respondWithError(err, writer)
+      return
+    }
 
-    writer.Header().Set("ETag", newEvent.Etag)
-    respond(http.StatusCreated, "", writer)
-    return
+    success = true
   }
 
-  // 2. Item exists, the event etag is verified and there's no IF-NONE-MATCH=* header: UPDATE the item
-  if found && precond.IfMatch(event.Etag) && !precond.IfNoneMatch("*") {
-    // update event
-    event.Content = requestBody
-    event.Etag = hash(requestBody)
-    eventsStorage[eventID] = event
+  if found {
+    // TODO: Handle PUT on collections
+    if resource.IsCollection() {
+      respond(http.StatusPreconditionFailed, "", writer)
+      return
+    }
 
-    writer.Header().Set("ETag", event.Etag)
+    // 2. Item exists, the resource etag is verified and there's no IF-NONE-MATCH=* header: UPDATE the item
+    resourceEtag, _ := resource.GetEtag()
+    if found && precond.IfMatch(resourceEtag) && !precond.IfNoneMatch("*") {
+      // update resource
+      resource, err = storage.UpdateResource(resourcePath, requestBody)
+      if err != nil {
+        respondWithError(err, writer)
+        return
+      }
+
+      success = true
+    }
+  }
+
+  if success {
+    resourceEtag, _ := resource.GetEtag()
+    writer.Header().Set("ETag", resourceEtag)
     respond(http.StatusCreated, "", writer)
     return
   }
@@ -454,6 +476,12 @@ func respond(status int, body string, writer http.ResponseWriter) {
 
   writer.WriteHeader(status)
   io.WriteString(writer, body)
+}
+
+func respondWithError(err error, writer http.ResponseWriter) {
+  // TODO: Better logging
+  fmt.Printf("\n*** Error: %s ***\n", err)
+  respond(http.StatusInternalServerError, "", writer)
 }
 
 func hash(s string) string {
