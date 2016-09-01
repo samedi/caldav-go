@@ -241,7 +241,7 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
       respond(http.StatusNotFound, "", writer)
       return
     }
-    respond(http.StatusMethodNotAllowed, "", writer)
+    respondWithError(err, writer)
     return
   }
 

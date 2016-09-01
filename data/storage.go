@@ -26,7 +26,7 @@ func (fs *FileStorage) GetResources(rpath string, depth int, user *CalUser) ([]R
   result := []Resource{}
 
   // tries to open the file by the given path
-  f, e := fs.openResourceFile(rpath)
+  f, e := fs.openResourceFile(rpath, os.O_RDONLY)
   if e != nil {
 		return nil, e
   }
@@ -98,7 +98,7 @@ func (fs *FileStorage) CreateResource(rpath string, content string) (*Resource, 
 }
 
 func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, error) {
-  f, e := fs.openResourceFile(rpath)
+  f, e := fs.openResourceFile(rpath, os.O_RDWR)
   if e != nil {
 		return nil, e
   }
@@ -112,9 +112,9 @@ func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, 
   return &res, nil
 }
 
-func (fs *FileStorage) openResourceFile(filepath string) (*os.File, error) {
+func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, error) {
   pwd, _ := os.Getwd()
-  f, e := os.OpenFile(pwd + filepath, os.O_RDWR, 0666)
+  f, e := os.OpenFile(pwd + filepath, mode, 0666)
   if e != nil {
     if os.IsNotExist(e) {
 			return nil, ErrResourceNotFound
