@@ -2,14 +2,11 @@ package main
 
 import (
   "bytes"
-  "strings"
   "fmt"
   "regexp"
 	"io"
   "io/ioutil"
 	"net/http"
-  "crypto/md5"
-  "encoding/hex"
   "github.com/yosssi/gohtml"
   "encoding/xml"
 
@@ -20,12 +17,6 @@ import (
 // Supported ICal components.
 // Currently only VEVENT is supported. VTODO and VJOURNAL are not.
 var SupportedComponents = []string{"VEVENT"}
-
-type CalendarEvent struct {
-  Content string
-  Etag    string
-}
-var eventsStorage map[string]CalendarEvent = make(map[string]CalendarEvent)
 
 func main() {
   http.HandleFunc("/", RequestHandler)
@@ -143,25 +134,41 @@ func HandlePUT(writer http.ResponseWriter, request *http.Request, precond Reques
 }
 
 func HandleDELETE(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions) {
-  // TODO: Handle delete on collections
+  storage := new(data.FileStorage)
 
   // get the event from the storage
-  eventID := extractEventID(request.URL.Path)
-  event, found := eventsStorage[eventID]
-
-  if found {
-    // check etag pre-condition
-    if !precond.IfMatch(event.Etag) {
-      respond(http.StatusPreconditionFailed, "", writer)
-      return
-    }
-
-    // delete event if pre-condition passes
-    delete(eventsStorage, eventID)
-    respond(http.StatusNoContent, "", writer)
-  } else {
-    respond(http.StatusNotFound, "", writer)
+  resource, found, err := storage.GetResource(request.URL.Path)
+  if err != nil && err != data.ErrResourceNotFound {
+    respondWithError(err, writer)
+    return
   }
+
+  if !found {
+    respond(http.StatusNotFound, "", writer)
+    return
+  }
+
+  // TODO: Handle delete on collections
+  if resource.IsCollection() {
+    respond(http.StatusMethodNotAllowed, "", writer)
+    return
+  }
+
+  // check ETag pre-condition
+  resourceEtag, _ := resource.GetEtag()
+  if !precond.IfMatch(resourceEtag) {
+    respond(http.StatusPreconditionFailed, "", writer)
+    return
+  }
+
+  // delete event after pre-condition passed
+  err = storage.DeleteResource(resource.Path)
+  if err != nil {
+    respondWithError(err, writer)
+    return
+  }
+
+  respond(http.StatusNoContent, "", writer)
 }
 
 func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBody string, currentUser *data.CalUser)  {
@@ -524,11 +531,4 @@ func respondWithError(err error, writer http.ResponseWriter) {
   // TODO: Better logging
   fmt.Printf("\n*** Error: %s ***\n", err)
   respond(http.StatusInternalServerError, "", writer)
-}
-
-func hash(s string) string {
-  s = strings.Replace(s, "\n", "", -1)
-  s = strings.Replace(s, "\r", "", -1)
-  hash := md5.Sum([]byte(s))
-  return hex.EncodeToString(hash[:])
 }

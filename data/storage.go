@@ -112,6 +112,13 @@ func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, 
   return &res, nil
 }
 
+func (fs *FileStorage) DeleteResource(rpath string) error {
+  pwd, _ := os.Getwd()
+  err := os.Remove(pwd + rpath)
+
+  return err
+}
+
 func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, error) {
   pwd, _ := os.Getwd()
   f, e := os.OpenFile(pwd + filepath, mode, 0666)
