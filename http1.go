@@ -40,7 +40,8 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   precond := RequestPreconditions{request}
 
   switch request.Method {
-  case "GET": HandleGET(writer, request)
+  case "GET": HandleGET(writer, request, false)
+  case "HEAD": HandleHEAD(writer, request)
   case "PUT": HandlePUT(writer, request, precond, requestBody)
   case "DELETE": HandleDELETE(writer, request, precond)
   case "PROPFIND": HandlePROPFIND(writer, request, requestBody, nil)
@@ -49,7 +50,7 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   }
 }
 
-func HandleGET(writer http.ResponseWriter, request *http.Request) {
+func HandleGET(writer http.ResponseWriter, request *http.Request, onlyheaders bool) {
   storage := new(data.FileStorage)
 
   resource, found, err := storage.GetResource(request.URL.Path)
@@ -70,9 +71,18 @@ func HandleGET(writer http.ResponseWriter, request *http.Request) {
   ctype, _ := resource.GetContentType()
   writer.Header().Set("Content-Type", ctype)
 
-  response, _ := resource.GetData()
+  var response string
+  if onlyheaders {
+    response = ""
+  } else {
+    response, _ = resource.GetData()
+  }
 
   respond(http.StatusOK, response, writer)
+}
+
+func HandleHEAD(writer http.ResponseWriter, request *http.Request) {
+  HandleGET(writer, request, true)
 }
 
 func HandlePUT(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions, requestBody string) {
@@ -300,7 +310,7 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
 // Returns the allowed methods and the DAV features implemented by the current server.
 // For more information about the values and format read RFC4918 Sections 10.1 and 18.
 func HandleOPTIONS(writer http.ResponseWriter, request *http.Request) {
-  writer.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS, PROPFIND, REPORT")
+  writer.Header().Set("Allow", "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT")
   // Set the DAV compliance header:
   // 1: Server supports all the requirements specified in RFC2518
   // 3: Server supports all the revisions specified in RFC4918
