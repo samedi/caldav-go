@@ -50,18 +50,29 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func HandleGET(writer http.ResponseWriter, request *http.Request) {
-  // TODO: Handle GET on collections
+  storage := new(data.FileStorage)
 
-  // get the event from the storage
-  eventID := extractEventID(request.URL.Path)
-  event, found := eventsStorage[eventID]
-
-  if found {
-    writer.Header().Set("ETag", event.Etag)
-    respond(http.StatusOK, event.Content, writer)
-  } else {
-    respond(http.StatusNotFound, "", writer)
+  resource, found, err := storage.GetResource(request.URL.Path)
+  if err != nil && err != data.ErrResourceNotFound {
+    respondWithError(err, writer)
+    return
   }
+
+  if !found {
+    respond(http.StatusNotFound, "", writer)
+    return
+  }
+
+  etag, _ := resource.GetEtag()
+  writer.Header().Set("ETag", etag)
+  lastm, _ := resource.GetLastModified(http.TimeFormat)
+  writer.Header().Set("Last-Modified", lastm)
+  ctype, _ := resource.GetContentType()
+  writer.Header().Set("Content-Type", ctype)
+
+  response, _ := resource.GetData()
+
+  respond(http.StatusOK, response, writer)
 }
 
 func HandlePUT(writer http.ResponseWriter, request *http.Request, precond RequestPreconditions, requestBody string) {
