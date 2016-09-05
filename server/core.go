@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
   "bytes"
@@ -18,7 +18,7 @@ import (
 // Currently only VEVENT is supported. VTODO and VJOURNAL are not.
 var SupportedComponents = []string{"VEVENT"}
 
-func main() {
+func StartServer() {
   http.HandleFunc("/", RequestHandler)
 	http.ListenAndServe(":8000", nil)
 }
@@ -39,6 +39,19 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   case "OPTIONS": HandleOPTIONS(writer, request)
   case "REPORT": HandleREPORT(writer, request, requestBody)
   }
+}
+
+// Returns the allowed methods and the DAV features implemented by the current server.
+// For more information about the values and format read RFC4918 Sections 10.1 and 18.
+func HandleOPTIONS(writer http.ResponseWriter, request *http.Request) {
+  writer.Header().Set("Allow", "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT")
+  // Set the DAV compliance header:
+  // 1: Server supports all the requirements specified in RFC2518
+  // 3: Server supports all the revisions specified in RFC4918
+  // calendar-access: Server supports all the extensions specified in RFC4791
+  writer.Header().Set("DAV", "1, 3, calendar-access")
+
+  respond(http.StatusOK, "", writer)
 }
 
 func HandleGET(writer http.ResponseWriter, request *http.Request, onlyheaders bool) {
@@ -312,19 +325,6 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
   response.WriteString("</D:multistatus>")
 
   respond(207, response.String(), writer) // Multi-Status
-}
-
-// Returns the allowed methods and the DAV features implemented by the current server.
-// For more information about the values and format read RFC4918 Sections 10.1 and 18.
-func HandleOPTIONS(writer http.ResponseWriter, request *http.Request) {
-  writer.Header().Set("Allow", "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT")
-  // Set the DAV compliance header:
-  // 1: Server supports all the requirements specified in RFC2518
-  // 3: Server supports all the revisions specified in RFC4918
-  // calendar-access: Server supports all the extensions specified in RFC4791
-  writer.Header().Set("DAV", "1, 3, calendar-access")
-
-  respond(http.StatusOK, "", writer)
 }
 
 func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
