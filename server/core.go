@@ -1,7 +1,6 @@
 package server
 
 import (
-  "bytes"
   "fmt"
   "regexp"
 	"io"
@@ -11,7 +10,6 @@ import (
   "encoding/xml"
 
   "caldav/data"
-  "caldav/ixml"
 )
 
 // Supported ICal components.
@@ -185,95 +183,6 @@ func HandleDELETE(writer http.ResponseWriter, request *http.Request, precond Req
 }
 
 func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBody string, currentUser *data.CalUser)  {
-  // Wraps a prop that was processed for a given resource.
-  type PropValue struct {
-    Tag      xml.Name
-    Content  string
-    Contents []string
-    Status   int
-  }
-
-  propToXML := func(pv PropValue) string {
-    for _, content := range pv.Contents {
-      pv.Content += content
-    }
-    xmlString := ixml.Tag(pv.Tag, pv.Content)
-    return xmlString
-  }
-
-  // Function that processes all the required props for a given resource.
-  // ## Params
-  // resource: the target calendar resource.
-  // reqprops: set of required props that must be processed for the resource.
-  // ## Returns
-  // The set of props (PropValue) processed. Each prop is mapped to a HTTP status code.
-  // So if a prop is found and processed ok, it'll be mapped to 200. If it's not found,
-  // it'll be mapped to 404, and so on.
-  propfind := func(resource *data.Resource, reqprops []xml.Name) map[int][]PropValue {
-    result := make(map[int][]PropValue)
-
-    for _, ptag := range reqprops {
-      pvalue := PropValue{
-        Tag: ptag,
-        Status: http.StatusOK,
-      }
-
-      pfound := false
-      switch ptag {
-      case xml.Name{Space: "DAV:", Local: "getetag"}:
-        pvalue.Content, pfound = resource.GetEtag()
-      case xml.Name{Space: "DAV:", Local: "getcontenttype"}:
-        pvalue.Content, pfound = resource.GetContentType()
-      case xml.Name{Space: "DAV:", Local: "getcontentlength"}:
-        pvalue.Content, pfound = resource.GetContentLength()
-      case xml.Name{Space: "DAV:", Local: "displayname"}:
-        pvalue.Content, pfound = resource.GetDisplayName()
-      case xml.Name{Space: "DAV:", Local: "getlastmodified"}:
-        pvalue.Content, pfound = resource.GetLastModified(http.TimeFormat)
-      case xml.Name{Space: "DAV:", Local: "owner"}:
-        pvalue.Content, pfound = resource.GetOwnerPath()
-      case xml.Name{Space: "http://calendarserver.org/ns/", Local: "getctag"}:
-        pvalue.Content, pfound = resource.GetEtag()
-      case xml.Name{Space: "DAV:", Local: "principal-URL"},
-           xml.Name{Space: "DAV:", Local: "principal-collection-set"},
-           xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "calendar-user-address-set"},
-           xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "calendar-home-set"}:
-        pvalue.Content, pfound = fmt.Sprintf("<D:href>%s</D:href>", resource.Path), true
-      case xml.Name{Space: "DAV:", Local: "resourcetype"}:
-        if resource.IsCollection() {
-          pvalue.Content, pfound = "<D:collection/><C:calendar/>", true
-
-          if resource.IsPrincipal() {
-            pvalue.Content += "<D:principal/>"
-          }
-        } else {
-          // resourcetype must be returned empty for non-collection elements
-          pvalue.Content, pfound = "", true
-        }
-      case xml.Name{Space: "DAV:", Local: "current-user-principal"}:
-        if resource.User != nil {
-          pvalue.Content, pfound = fmt.Sprintf("<D:href>/%s/</D:href>", resource.User.Name), true
-        }
-      case xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "supported-calendar-component-set"}:
-        if resource.IsCollection() {
-          for _, component := range SupportedComponents {
-            compTag := fmt.Sprintf(`<C:comp name="%s"/>`, component)
-            pvalue.Contents = append(pvalue.Contents, compTag)
-          }
-          pfound = true
-        }
-      }
-
-      if !pfound {
-        pvalue.Status = http.StatusNotFound
-      }
-
-      result[pvalue.Status] = append(result[pvalue.Status], pvalue)
-    }
-
-    return result
-  }
-
   // get the target resources based on the request URL
   storage := new(data.FileStorage)
   resources, err := storage.GetResources(request.URL.Path, getDepth(request), currentUser)
@@ -297,95 +206,29 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
   var requestXML XMLRoot2
   xml.Unmarshal([]byte(requestBody), &requestXML)
 
-  // init response
-  var response bytes.Buffer
-  response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-  response.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
-
-  // for each resource, fetch the requested props and build the response
+  multistatus := NewMultistatusResp()
+  // for each href, build the multistatus responses
   for _, resource := range resources {
-    response.WriteString("<D:response>")
-    response.WriteString(fmt.Sprintf("<D:href>%s</D:href>", resource.Path))
-
-    propsMap := propfind(&resource, requestXML.Prop.Tags)
-
-    for status, props := range propsMap {
-      response.WriteString("<D:propstat>")
-      response.WriteString("<D:prop>")
-      for _, prop := range props {
-        response.WriteString(propToXML(prop))
-      }
-      response.WriteString("</D:prop>")
-      response.WriteString(ixml.StatusTag(status))
-      response.WriteString("</D:propstat>")
-    }
-
-    response.WriteString("</D:response>")
+    propstats := multistatus.Propstats(&resource, requestXML.Prop.Tags)
+    multistatus.AddResponse(resource.Path, true, propstats)
   }
-  response.WriteString("</D:multistatus>")
 
-  respond(207, response.String(), writer) // Multi-Status
+  respond(207, multistatus.ToXML(), writer)
 }
 
 func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
   // TODO: HANDLE FILTERS, DEPTH, COLLECTIONS
+  storage := new(data.FileStorage)
 
-  type PropValue struct {
-    Tag      xml.Name
-    Content  string
-    Contents []string
-    Status   int
-  }
-
-  propToXML := func(pv PropValue) string {
-    for _, content := range pv.Contents {
-      pv.Content += content
-    }
-    xmlString := ixml.Tag(pv.Tag, pv.Content)
-    return xmlString
-  }
-
-  report := func(resource *data.Resource, reqprops []xml.Name) map[int][]PropValue {
-    result := make(map[int][]PropValue)
-
-    for _, ptag := range reqprops {
-      pvalue := PropValue{
-        Tag: ptag,
-        Status: http.StatusOK,
-      }
-
-      pfound := false
-
-      switch ptag {
-      case xml.Name{Space:"DAV:", Local:"getetag"}:
-        pvalue.Content, pfound = resource.GetEtag()
-      case xml.Name{Space: "DAV:", Local: "getcontenttype"}:
-        pvalue.Content, pfound = resource.GetContentType()
-      case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}:
-        pvalue.Content, pfound = resource.GetData()
-      }
-
-      if !pfound {
-        pvalue.Status = http.StatusNotFound
-      }
-
-      result[pvalue.Status] = append(result[pvalue.Status], pvalue)
-    }
-
-    return result
-  }
-
+  // read body string to xml struct
   type XMLProp struct {
     Tags []xml.Name `xml:",any"`
   }
-
   type XMLRoot struct {
     XMLName xml.Name
     Prop    XMLProp  `xml:"DAV: prop"`
     Hrefs   []string `xml:"DAV: href"`
   }
-
-  // read body string to xml struct
   var requestXML XMLRoot
   xml.Unmarshal([]byte(requestBody), &requestXML)
 
@@ -398,14 +241,8 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
     reportHrefs = requestXML.Hrefs
   }
 
-  storage := new(data.FileStorage)
-
-  // init response
-  var response bytes.Buffer
-  response.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-  response.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
-
-  // iterate over event hrefs and build response xml on the fly
+  multistatus := NewMultistatusResp()
+  // for each href, build the multistatus responses
   for _, href := range reportHrefs {
     resource, found, err := storage.GetResource(href)
     if err != nil && err != data.ErrResourceNotFound {
@@ -413,31 +250,11 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
       return
     }
 
-    response.WriteString("<D:response>")
-    response.WriteString(fmt.Sprintf("<D:href>%s</D:href>", href))
-
-    if found {
-      reportMap := report(resource, requestXML.Prop.Tags)
-
-      for status, props := range reportMap {
-        response.WriteString("<D:propstat>")
-        response.WriteString("<D:prop>")
-        for _, prop := range props {
-          response.WriteString(propToXML(prop))
-        }
-        response.WriteString("</D:prop>")
-        response.WriteString(ixml.StatusTag(status))
-        response.WriteString("</D:propstat>")
-      }
-    } else {
-      // if does not find the resource set 404
-      response.WriteString(ixml.StatusTag(http.StatusNotFound))
-    }
-    response.WriteString("</D:response>")
+    propstats := multistatus.Propstats(resource, requestXML.Prop.Tags)
+    multistatus.AddResponse(href, found, propstats)
   }
-  response.WriteString("</D:multistatus>")
 
-  respond(207, response.String(), writer) // Multi-Status
+  respond(207, multistatus.ToXML(), writer)
 }
 
 // =============== OTHERS ====================================
