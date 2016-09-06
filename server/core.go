@@ -2,12 +2,12 @@ package server
 
 import (
   "fmt"
-  "regexp"
 	"io"
   "io/ioutil"
-	"net/http"
-  "github.com/yosssi/gohtml"
+  "net/http"
   "encoding/xml"
+
+  "github.com/yosssi/gohtml"
 
   "caldav/data"
 )
@@ -216,47 +216,6 @@ func HandlePROPFIND(writer http.ResponseWriter, request *http.Request, requestBo
   respond(207, multistatus.ToXML(), writer)
 }
 
-func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
-  // TODO: HANDLE FILTERS, DEPTH, COLLECTIONS
-  storage := new(data.FileStorage)
-
-  // read body string to xml struct
-  type XMLProp struct {
-    Tags []xml.Name `xml:",any"`
-  }
-  type XMLRoot struct {
-    XMLName xml.Name
-    Prop    XMLProp  `xml:"DAV: prop"`
-    Hrefs   []string `xml:"DAV: href"`
-  }
-  var requestXML XMLRoot
-  xml.Unmarshal([]byte(requestBody), &requestXML)
-
-  // The hrefs can come from the request URL (in this case will be only one) or from the request body itself.
-  // The one in the URL will have priority (see RFC4791#section-7.9).
-  var reportHrefs []string
-  if extractEventID(request.URL.Path) != "" {
-    reportHrefs = []string{request.URL.Path}
-  } else {
-    reportHrefs = requestXML.Hrefs
-  }
-
-  multistatus := NewMultistatusResp()
-  // for each href, build the multistatus responses
-  for _, href := range reportHrefs {
-    resource, found, err := storage.GetResource(href)
-    if err != nil && err != data.ErrResourceNotFound {
-      respondWithError(err, writer)
-      return
-    }
-
-    propstats := multistatus.Propstats(resource, requestXML.Prop.Tags)
-    multistatus.AddResponse(href, found, propstats)
-  }
-
-  respond(207, multistatus.ToXML(), writer)
-}
-
 // =============== OTHERS ====================================
 
 const (
@@ -314,18 +273,6 @@ func logRequest(request *http.Request, body string) {
   if body != "" {
     fmt.Printf("\nRequest content:\n%s\n", gohtml.Format(body))
   }
-}
-
-// Extracts the event ID from the request's URL path
-func extractEventID(requestPath string) string {
-  id         := ""
-  pattern, _ := regexp.Compile("\\/user\\/calendar\\/(.+)\\.ics")
-  matches    := pattern.FindStringSubmatch(requestPath)
-  if len(matches) > 1 {
-    id = matches[1]
-  }
-
-  return id
 }
 
 func respond(status int, body string, writer http.ResponseWriter) {

@@ -1,8 +1,10 @@
 package main
 
 import (
-  "testing"
+  "fmt"
   "os"
+  "runtime"
+  "testing"
   "strings"
   "regexp"
   "net/http"
@@ -277,6 +279,9 @@ func TestREPORT(t *testing.T) {
   rName := "123-456-789.ics"
   createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
 
+  // Test 1: when the URL path points to a collection and passing the list of hrefs in the body.
+  path := collection
+
   reportXML := `
 <?xml version="1.0" encoding="UTF-8"?>
 <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
@@ -285,10 +290,13 @@ func TestREPORT(t *testing.T) {
     <C:calendar-data/>
   </D:prop>
   <D:href>/test/data/report/123-456-789.ics</D:href>
+  <D:href>/test/data/report/000-000-000.ics</D:href>
   <D:href>/foo/bar</D:href>
 </C:calendar-multiget>
 `
 
+  // the response should contain only the hrefs that belong to the collection.
+  // the ones that do not belong are ignored.
   expectedRespBody := `
 <?xml version="1.0" encoding="UTF-8"?>
 <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
@@ -303,14 +311,39 @@ func TestREPORT(t *testing.T) {
     </D:propstat>
   </D:response>
   <D:response>
-    <D:href>/foo/bar</D:href>
+    <D:href>/test/data/report/000-000-000.ics</D:href>
     <D:status>HTTP/1.1 404 Not Found</D:status>
   </D:response>
 </D:multistatus>
 `
 
-  resp := doRequest("REPORT", collection, reportXML, nil)
+  resp := doRequest("REPORT", path, reportXML, nil)
   respBody := readResponseBody(resp)
+  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+
+  // Test 2: when the URL path points to an actual resource and using the same body as before
+  path = collection + rName
+
+  // the response should contain only the resource from the URL.
+  // the rest are ignored
+  expectedRespBody = `
+<?xml version="1.0" encoding="UTF-8"?>
+<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:response>
+    <D:href>/test/data/report/123-456-789.ics</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:getetag>?</D:getetag>
+        <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+</D:multistatus>
+`
+
+  resp = doRequest("REPORT", path, reportXML, nil)
+  respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 }
 
@@ -383,12 +416,14 @@ func checkerr(err error) {
 
 func assertStr(target string, expectation string, t *testing.T) {
   if target != expectation {
+    logFailedLine()
     t.Error("Expected:", expectation, "| Got:", target)
   }
 }
 
 func assertInt(target int, expectation int, t *testing.T) {
   if target != expectation {
+    logFailedLine()
     t.Error("Expected:", expectation, "| Got:", target)
   }
 }
@@ -396,6 +431,7 @@ func assertInt(target int, expectation int, t *testing.T) {
 func assertResourceDoesNotExist(rpath string, t *testing.T) {
   pwd, _ := os.Getwd()
   if _, err := os.Stat(pwd + rpath); !os.IsNotExist(err) {
+    logFailedLine()
     t.Error("Resource", rpath, "exists")
   }
 }
@@ -404,6 +440,7 @@ func assertResourceExists(rpath string, t *testing.T) {
   pwd, _ := os.Getwd()
   _, err := os.Stat(pwd + rpath)
   if os.IsNotExist(err) {
+    logFailedLine()
     t.Error("Resource", rpath, "does not exist")
   } else {
     checkerr(err)
@@ -416,6 +453,12 @@ func assertResourceData(rpath, expectation string, t *testing.T) {
   dataStr := string(data)
   checkerr(err)
   if dataStr != expectation {
+    logFailedLine()
     t.Error("Expected:", expectation, "| Got:", dataStr)
   }
+}
+
+func logFailedLine() {
+  pc, fn, line, _ := runtime.Caller(2)
+  fmt.Printf("\n\n** Failed in %s[%s:%d] **\n\n", runtime.FuncForPC(pc).Name(), fn, line)
 }
