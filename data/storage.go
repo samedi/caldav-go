@@ -22,7 +22,7 @@ type Storage interface {
 type FileStorage struct {
 }
 
-func (fs *FileStorage) GetResources(rpath string, depth int, user *CalUser) ([]Resource, error) {
+func (fs *FileStorage) GetResources(rpath string, depth int) ([]Resource, error) {
   result := []Resource{}
 
   // tries to open the file by the given path
@@ -34,7 +34,6 @@ func (fs *FileStorage) GetResources(rpath string, depth int, user *CalUser) ([]R
   // add it as a resource to the result list
   finfo, _ := f.Stat()
   resource := NewResource(rpath, finfo)
-  resource.User = user
   result = append(result, resource)
 
   // if depth is 1 and the file is a dir, add its children to the result list
@@ -42,7 +41,6 @@ func (fs *FileStorage) GetResources(rpath string, depth int, user *CalUser) ([]R
     files, _ := f.Readdir(0)
     for _, finfo := range files {
       resource = NewResource(rpath + finfo.Name(), finfo)
-      resource.User = user
       result = append(result, resource)
     }
   }
@@ -51,7 +49,7 @@ func (fs *FileStorage) GetResources(rpath string, depth int, user *CalUser) ([]R
 }
 
 func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
-  resources, err := fs.GetResources(rpath, 0, nil)
+  resources, err := fs.GetResources(rpath, 0)
 
   if err != nil {
     return nil, false, err

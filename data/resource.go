@@ -13,8 +13,7 @@ type Resource struct {
   Name string
   Path string
   PathSplit []string
-  File os.FileInfo
-  User *CalUser
+  File os.FileInfo  
 }
 
 func NewResource(filePath string, fileInfo os.FileInfo) Resource {

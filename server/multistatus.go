@@ -92,8 +92,9 @@ func (ms *MultistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
         pvalue.Content, pfound = "", true
       }
     case xml.Name{Space: "DAV:", Local: "current-user-principal"}:
-      if resource.User != nil {
-        pvalue.Content, pfound = fmt.Sprintf("<D:href>/%s/</D:href>", resource.User.Name), true
+      currentUser := getCurrentUser()
+      if currentUser != nil {
+        pvalue.Content, pfound = fmt.Sprintf("<D:href>/%s/</D:href>", currentUser.Name), true
       }
     case xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "supported-calendar-component-set"}:
       if resource.IsCollection() {

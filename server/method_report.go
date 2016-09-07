@@ -8,7 +8,13 @@ import (
   "caldav/data"
 )
 
-func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody string) {
+type ReportHandler struct{
+  request *http.Request
+  requestBody string
+  writer http.ResponseWriter
+}
+
+func (rh ReportHandler) Handle() {
   // TODO: HANDLE FILTERS, DEPTH
   storage := new(data.FileStorage)
 
@@ -22,20 +28,20 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
     Hrefs   []string `xml:"DAV: href"`
   }
   var requestXML XMLRoot
-  xml.Unmarshal([]byte(requestBody), &requestXML)
+  xml.Unmarshal([]byte(rh.requestBody), &requestXML)
 
-  urlResource, found, err := storage.GetResource(request.URL.Path)
+  urlResource, found, err := storage.GetResource(rh.request.URL.Path)
   if !found {
-    respond(http.StatusNotFound, "", writer)
+    respond(http.StatusNotFound, "", rh.writer)
     return
   } else if err != nil {
-    respondWithError(err, writer)
+    respondWithError(err, rh.writer)
     return
   }
 
-  resourcesToReport, err := fetchResourcesByList(urlResource, requestXML.Hrefs)
+  resourcesToReport, err := rh.fetchResourcesByList(urlResource, requestXML.Hrefs)
   if err != nil {
-    respondWithError(err, writer)
+    respondWithError(err, rh.writer)
     return
   }
 
@@ -46,9 +52,8 @@ func HandleREPORT(writer http.ResponseWriter, request *http.Request, requestBody
     multistatus.AddResponse(r.href, r.found, propstats)
   }
 
-  respond(207, multistatus.ToXML(), writer)
+  respond(207, multistatus.ToXML(), rh.writer)
 }
-
 
 // Wraps a resource that has to be reported. Basically it contains
 // the original requested `href`, the actual `resource` (can be nil)
@@ -59,9 +64,14 @@ type reportRes struct {
   found bool
 }
 
-// The hrefs can come from the request URL (in this case will be only one) or from the request body itself.
-// The one in the URL will have priority (see RFC4791#section-7.9).
-func fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]reportRes, error) {
+// The hrefs can come from (1) the request URL or (2) from the request body itself.
+// If the resource from the URL points to a collection (2), we will check the request body
+// to get the requested `hrefs` (resource paths). Each requested href has to be related to the collection.
+// The ones that are not, we simply ignore them.
+// If the resource from the URL is NOT a collection (1) we process the the report only for this resource
+// and ignore any othre requested hrefs that might be present in the request body.
+// [See RFC4791#section-7.9]
+func (rh ReportHandler) fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]reportRes, error) {
   storage := new(data.FileStorage)
 
   reps := []reportRes{}
@@ -70,6 +80,7 @@ func fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]rep
   if origin.IsCollection() {
     for _, path := range requestedPaths {
       // if the requested path does not belong to the origin collection, skip
+      // ('belonging' means that the path's prefix is the same as the collection path)
       if !strings.HasPrefix(path, origin.Path) {
         continue
       }
