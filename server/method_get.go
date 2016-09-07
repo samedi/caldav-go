@@ -13,8 +13,6 @@ type GetHandler struct {
 }
 
 func (gh GetHandler) Handle() {
-  storage := new(data.FileStorage)
-
   resource, found, err := storage.GetResource(gh.request.URL.Path)
   if err != nil && err != data.ErrResourceNotFound {
     respondWithError(err, gh.writer)

@@ -12,7 +12,6 @@ type PutHandler struct {
 }
 
 func (ph PutHandler) Handle() {
-  storage := new(data.FileStorage)
   precond := RequestPreconditions{ph.request}
   success := false
 

@@ -18,6 +18,8 @@ const (
 	invalidDepth  = -2
 )
 
+var storage data.FileStorage = data.FileStorage{}
+
 func getDepth(request *http.Request) int {
   d := "infinity"
 

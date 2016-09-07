@@ -16,7 +16,6 @@ type ReportHandler struct{
 
 func (rh ReportHandler) Handle() {
   // TODO: HANDLE FILTERS, DEPTH
-  storage := new(data.FileStorage)
 
   // read body string to xml struct
   type XMLProp struct {
@@ -72,8 +71,6 @@ type reportRes struct {
 // and ignore any othre requested hrefs that might be present in the request body.
 // [See RFC4791#section-7.9]
 func (rh ReportHandler) fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]reportRes, error) {
-  storage := new(data.FileStorage)
-
   reps := []reportRes{}
 
   // if origin resource is a collection, we have to check if each requested path belongs to it
@@ -98,7 +95,3 @@ func (rh ReportHandler) fetchResourcesByList(origin *data.Resource, requestedPat
 
   return reps, nil
 }
-
-// func fetchResourcesByFilters(origin *data.Resource, depth string, filters string) []reportRes {
-//   return nil
-// }

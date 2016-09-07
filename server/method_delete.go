@@ -12,7 +12,6 @@ type DeleteHandler struct {
 }
 
 func (dh DeleteHandler) Handle() {
-  storage := new(data.FileStorage)
   precond := RequestPreconditions{dh.request}
 
   // get the event from the storage
