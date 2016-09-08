@@ -238,7 +238,7 @@ func TestPROPFIND(t *testing.T) {
 </D:multistatus>
 `
 
-  resp = doRequest("PROPFIND", collection, propfindXML, headers)
+  resp = doRequest("PROPFIND", "/test/data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 
@@ -269,7 +269,12 @@ func TestPROPFIND(t *testing.T) {
 </D:multistatus>
 `
 
-  resp = doRequest("PROPFIND", collection, propfindXML, headers)
+  resp = doRequest("PROPFIND", "/test/data/propfind/", propfindXML, headers)
+  respBody = readResponseBody(resp)
+  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+
+  // the same test as before but without the trailing '/' on the collection's path
+  resp = doRequest("PROPFIND", "/test/data/propfind", propfindXML, headers)
   respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 }

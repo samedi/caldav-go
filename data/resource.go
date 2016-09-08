@@ -3,21 +3,21 @@ package data
 import (
   "fmt"
   "os"
-  "path"
   "strings"
   "strconv"
   "io/ioutil"
+  "caldav/files"
 )
 
 type Resource struct {
   Name string
   Path string
   PathSplit []string
-  File os.FileInfo  
+  File os.FileInfo
 }
 
 func NewResource(filePath string, fileInfo os.FileInfo) Resource {
-  pClean  := path.Clean(filePath)
+  pClean  := files.ToSlashPath(filePath)
   pSplit  := strings.Split(strings.Trim(pClean, "/"), "/")
 
   return Resource{
@@ -99,8 +99,7 @@ func (r *Resource) GetData() (string, bool) {
     return "", false
   }
 
-  pwd, _ := os.Getwd()
-  data, err := ioutil.ReadFile(pwd + r.Path)
+  data, err := ioutil.ReadFile(files.AbsPath(r.Path))
   if err != nil {
     // TODO: Log error
     return "", false

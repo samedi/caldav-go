@@ -3,7 +3,7 @@ package data
 import (
   "os"
   "errors"
-  "strings"
+  "caldav/files"
 )
 
 var (
@@ -38,9 +38,9 @@ func (fs *FileStorage) GetResources(rpath string, depth int) ([]Resource, error)
 
   // if depth is 1 and the file is a dir, add its children to the result list
   if depth == 1 && finfo.IsDir() {
-    files, _ := f.Readdir(0)
-    for _, finfo := range files {
-      resource = NewResource(rpath + finfo.Name(), finfo)
+    dirFiles, _ := f.Readdir(0)
+    for _, finfo := range dirFiles {
+      resource = NewResource(files.JoinPaths(rpath, finfo.Name()), finfo)
       result = append(result, resource)
     }
   }
@@ -70,21 +70,19 @@ func (fs *FileStorage) IsResourcePresent(rpath string) bool {
 }
 
 func (fs *FileStorage) CreateResource(rpath string, content string) (*Resource, error) {
-  pwd, _ := os.Getwd()
-  rFullPath := pwd + rpath
+  rAbsPath := files.AbsPath(rpath)
 
-  if fs.IsResourcePresent(rFullPath) {
+  if fs.IsResourcePresent(rAbsPath) {
     return nil, ErrResourceAlreadyCreated
   }
 
   // create parent directories (if needed)
-  parentDirs, _ := fs.splitParentDirs(rFullPath)
-  if err := os.MkdirAll(parentDirs, os.ModePerm); err != nil {
+  if err := os.MkdirAll(files.DirPath(rAbsPath), os.ModePerm); err != nil {
     return nil, err
   }
 
   // create file/resource and write content
-  f, err := os.Create(rFullPath)
+  f, err := os.Create(rAbsPath)
   if err != nil {
     return nil, err
   }
@@ -111,15 +109,13 @@ func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, 
 }
 
 func (fs *FileStorage) DeleteResource(rpath string) error {
-  pwd, _ := os.Getwd()
-  err := os.Remove(pwd + rpath)
+  err := os.Remove(files.AbsPath(rpath))
 
   return err
 }
 
 func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, error) {
-  pwd, _ := os.Getwd()
-  f, e := os.OpenFile(pwd + filepath, mode, 0666)
+  f, e := os.OpenFile(files.AbsPath(filepath), mode, 0666)
   if e != nil {
     if os.IsNotExist(e) {
 			return nil, ErrResourceNotFound
@@ -128,11 +124,4 @@ func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, er
   }
 
   return f, nil
-}
-
-func (fs *FileStorage) splitParentDirs(filepath string) (parents, filename string) {
-  members := strings.Split(filepath, "/")
-  parents = strings.Join(members[:len(members)-1], "/")
-  filename = members[len(members)-1]
-  return
 }
