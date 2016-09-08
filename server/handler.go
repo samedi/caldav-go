@@ -23,6 +23,9 @@ func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   case "PROPFIND": method = PropfindHandler{request, requestBody, writer}
   case "OPTIONS": method = OptionsHandler{request, requestBody, writer}
   case "REPORT": method = ReportHandler{request, requestBody, writer}
+  default:
+    respond(http.StatusNotImplemented, "", writer)
+    return
   }
 
   method.Handle()
