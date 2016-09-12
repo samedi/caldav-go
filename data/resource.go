@@ -5,10 +5,31 @@ import (
   "os"
   "strings"
   "strconv"
+  "time"
   "io/ioutil"
+
+  "caldav/lib"
   "caldav/files"
 )
 
+// TODO: rename it to Resource
+type ResourceInterface interface {
+  ComponentName() string
+  StartTimeUTC() time.Time
+  EndTimeUTC() time.Time
+  Recurrences() []ResourceRecurrence
+  HasProperty(propName string) bool
+  GetPropertyValue(propName string) string
+  HasPropertyParam(propName, paramName string) bool
+  GetPropertyParamValue(propName, paramName string) string
+}
+
+type ResourceRecurrence struct {
+  StartTime time.Time
+  EndTime   time.Time
+}
+
+// TODO: rename it to ResourceFile
 type Resource struct {
   Name string
   Path string
@@ -34,6 +55,49 @@ func (r *Resource) IsCollection() bool {
 
 func (r *Resource) IsPrincipal() bool {
   return len(r.PathSplit) <= 1
+}
+
+func (r *Resource) ComponentName() string {
+  if r.IsCollection() {
+    return lib.VCALENDAR
+  } else {
+    return lib.VEVENT
+  }
+}
+
+func (r *Resource) StartTimeUTC() time.Time {
+  // TODO: implement based on the vevent component table - section 9.9
+  return time.Time{}
+}
+
+func (r *Resource) EndTimeUTC() time.Time {
+  // TODO: implement based on the vevent component table - section 9.9
+  return time.Time{}
+}
+
+func (r *Resource) Recurrences() []ResourceRecurrence {
+  // TODO: implement
+  return nil
+}
+
+func (r *Resource) HasProperty(propName string) bool {
+  // TODO: implement
+  return false
+}
+
+func (r *Resource) GetPropertyValue(propName string) string {
+  // TODO: implement
+  return ""
+}
+
+func (r *Resource) HasPropertyParam(propName, paramName string) bool {
+  // TODO: implement
+  return false
+}
+
+func (r *Resource) GetPropertyParamValue(propName, paramName string) string {
+  // TODO: implement
+  return ""
 }
 
 func (r *Resource) GetEtag() (string, bool) {
@@ -106,4 +170,24 @@ func (r *Resource) GetData() (string, bool) {
   }
 
   return string(data), true
+}
+
+func (r *Resource) GetCollectionContentPaths() ([]string, bool) {
+  if !r.IsCollection() {
+    return nil, false
+  }
+
+  content, err := ioutil.ReadDir(files.AbsPath(r.Path))
+	if err != nil {
+    // TODO: Log error
+    return nil, false
+	}
+
+  result := []string{}
+	for _, file := range content {
+    fpath := files.JoinPaths(r.Path, file.Name())
+    result = append(result, fpath)
+	}
+
+  return result, true
 }

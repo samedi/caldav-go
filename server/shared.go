@@ -6,12 +6,13 @@ import (
   "io/ioutil"
   "net/http"
   "github.com/yosssi/gohtml"
+
+  "caldav/lib"
   "caldav/data"
 )
 
-// Supported ICal components.
-// Currently only VEVENT is supported. VTODO and VJOURNAL are not.
-var SupportedComponents = []string{"VEVENT"}
+// Supported ICal components on this server.
+var SupportedComponents = []string{lib.VCALENDAR, lib.VEVENT}
 
 const (
 	infiniteDepth = -1
