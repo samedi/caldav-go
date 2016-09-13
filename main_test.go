@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestOPTIONS(t *testing.T) {
-  resp := doRequest("OPTIONS", "/test/data/", "", nil)
+  resp := doRequest("OPTIONS", "/test-data/", "", nil)
 
   assertInt(len(resp.Header["Allow"]), 1, t)
   assertInt(len(resp.Header["Dav"]), 1, t)
@@ -30,7 +30,7 @@ func TestOPTIONS(t *testing.T) {
 }
 
 func TestGET(t *testing.T) {
-  collection := "/test/data/get/"
+  collection := "/test-data/get/"
   rName := "123-456-789.ics"
   rPath := collection + rName
   rData := "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT"
@@ -48,7 +48,7 @@ func TestGET(t *testing.T) {
 }
 
 func TestPUT(t *testing.T) {
-  rpath := "/test/data/put/123-456-789.ics"
+  rpath := "/test-data/put/123-456-789.ics"
 
   // test when trying to create a new resource and a IF-MATCH header is present
   headers := map[string]string{
@@ -68,7 +68,7 @@ func TestPUT(t *testing.T) {
   assertResourceData(rpath, resourceData, t)
 
   // test when trying to update a collection (folder)
-  resp = doRequest("PUT", "/test/data/put/", "", nil)
+  resp = doRequest("PUT", "/test-data/put/", "", nil)
   assertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
 
   // test when trying to update the resource but the ETag check (IF-MATCH header) does not match
@@ -102,7 +102,7 @@ func TestPUT(t *testing.T) {
 }
 
 func TestDELETE(t *testing.T) {
-  collection := "/test/data/delete/"
+  collection := "/test-data/delete/"
   rName := "123-456-789.ics"
   rpath := collection + rName
   createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
@@ -135,7 +135,7 @@ func TestPROPFIND(t *testing.T) {
   resp := doRequest("PROPFIND", "/foo/bar/", "", nil)
   assertInt(resp.StatusCode, http.StatusNotFound, t)
 
-  collection := "/test/data/propfind/"
+  collection := "/test-data/propfind/"
   rName := "123-456-789.ics"
   rpath := collection + rName
   createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
@@ -165,7 +165,7 @@ func TestPROPFIND(t *testing.T) {
 <?xml version="1.0" encoding="UTF-8"?>
 <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
   <D:response>
-    <D:href>/test/data/propfind/123-456-789.ics</D:href>
+    <D:href>/test-data/propfind/123-456-789.ics</D:href>
     <D:propstat>
       <D:prop>
         <D:getetag>?</D:getetag>
@@ -173,19 +173,19 @@ func TestPROPFIND(t *testing.T) {
         <D:getcontentlength>39</D:getcontentlength>
         <D:displayname>123-456-789.ics</D:displayname>
         <D:getlastmodified>?</D:getlastmodified>
-        <D:owner>/test/</D:owner>
+        <D:owner>/test-data/</D:owner>
         <CS:getctag>?</CS:getctag>
         <D:principal-URL>
-          <D:href>/test/data/propfind/123-456-789.ics</D:href>
+          <D:href>/test-data/propfind/123-456-789.ics</D:href>
         </D:principal-URL>
         <D:principal-collection-set>
-          <D:href>/test/data/propfind/123-456-789.ics</D:href>
+          <D:href>/test-data/propfind/123-456-789.ics</D:href>
         </D:principal-collection-set>
         <C:calendar-user-address-set>
-          <D:href>/test/data/propfind/123-456-789.ics</D:href>
+          <D:href>/test-data/propfind/123-456-789.ics</D:href>
         </C:calendar-user-address-set>
         <C:calendar-home-set>
-          <D:href>/test/data/propfind/123-456-789.ics</D:href>
+          <D:href>/test-data/propfind/123-456-789.ics</D:href>
         </C:calendar-home-set>
         <D:resourcetype/>
       </D:prop>
@@ -227,7 +227,7 @@ func TestPROPFIND(t *testing.T) {
 <?xml version="1.0" encoding="UTF-8"?>
 <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
   <D:response>
-    <D:href>/test/data/propfind</D:href>
+    <D:href>/test-data/propfind</D:href>
     <D:propstat>
       <D:prop>
         <D:getcontenttype>text/calendar</D:getcontenttype>
@@ -238,7 +238,7 @@ func TestPROPFIND(t *testing.T) {
 </D:multistatus>
 `
 
-  resp = doRequest("PROPFIND", "/test/data/propfind/", propfindXML, headers)
+  resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 
@@ -249,7 +249,7 @@ func TestPROPFIND(t *testing.T) {
 <?xml version="1.0" encoding="UTF-8"?>
 <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
   <D:response>
-    <D:href>/test/data/propfind</D:href>
+    <D:href>/test-data/propfind</D:href>
     <D:propstat>
       <D:prop>
         <D:getcontenttype>text/calendar</D:getcontenttype>
@@ -258,7 +258,7 @@ func TestPROPFIND(t *testing.T) {
     </D:propstat>
   </D:response>
   <D:response>
-    <D:href>/test/data/propfind/123-456-789.ics</D:href>
+    <D:href>/test-data/propfind/123-456-789.ics</D:href>
     <D:propstat>
       <D:prop>
         <D:getcontenttype>text/calendar; component=vcalendar</D:getcontenttype>
@@ -269,18 +269,18 @@ func TestPROPFIND(t *testing.T) {
 </D:multistatus>
 `
 
-  resp = doRequest("PROPFIND", "/test/data/propfind/", propfindXML, headers)
+  resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 
   // the same test as before but without the trailing '/' on the collection's path
-  resp = doRequest("PROPFIND", "/test/data/propfind", propfindXML, headers)
+  resp = doRequest("PROPFIND", "/test-data/propfind", propfindXML, headers)
   respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 }
 
 func TestREPORT(t *testing.T) {
-  collection := "/test/data/report/"
+  collection := "/test-data/report/"
   rName := "123-456-789.ics"
   createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
 
@@ -294,8 +294,8 @@ func TestREPORT(t *testing.T) {
     <D:getetag/>
     <C:calendar-data/>
   </D:prop>
-  <D:href>/test/data/report/123-456-789.ics</D:href>
-  <D:href>/test/data/report/000-000-000.ics</D:href>
+  <D:href>/test-data/report/123-456-789.ics</D:href>
+  <D:href>/test-data/report/000-000-000.ics</D:href>
   <D:href>/foo/bar</D:href>
 </C:calendar-multiget>
 `
@@ -306,7 +306,7 @@ func TestREPORT(t *testing.T) {
 <?xml version="1.0" encoding="UTF-8"?>
 <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
   <D:response>
-    <D:href>/test/data/report/123-456-789.ics</D:href>
+    <D:href>/test-data/report/123-456-789.ics</D:href>
     <D:propstat>
       <D:prop>
         <D:getetag>?</D:getetag>
@@ -316,7 +316,7 @@ func TestREPORT(t *testing.T) {
     </D:propstat>
   </D:response>
   <D:response>
-    <D:href>/test/data/report/000-000-000.ics</D:href>
+    <D:href>/test-data/report/000-000-000.ics</D:href>
     <D:status>HTTP/1.1 404 Not Found</D:status>
   </D:response>
 </D:multistatus>
@@ -335,7 +335,7 @@ func TestREPORT(t *testing.T) {
 <?xml version="1.0" encoding="UTF-8"?>
 <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
   <D:response>
-    <D:href>/test/data/report/123-456-789.ics</D:href>
+    <D:href>/test-data/report/123-456-789.ics</D:href>
     <D:propstat>
       <D:prop>
         <D:getetag>?</D:getetag>
