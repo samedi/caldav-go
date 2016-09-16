@@ -33,14 +33,15 @@ func (fs *FileStorage) GetResources(rpath string, depth int) ([]Resource, error)
 
   // add it as a resource to the result list
   finfo, _ := f.Stat()
-  resource := NewResource(rpath, finfo)
+  resource := NewResource(rpath, &FileResourceAdapter{finfo, rpath})
   result = append(result, resource)
 
   // if depth is 1 and the file is a dir, add its children to the result list
   if depth == 1 && finfo.IsDir() {
     dirFiles, _ := f.Readdir(0)
     for _, finfo := range dirFiles {
-      resource = NewResource(files.JoinPaths(rpath, finfo.Name()), finfo)
+      childPath := files.JoinPaths(rpath, finfo.Name())
+      resource = NewResource(childPath, &FileResourceAdapter{finfo, childPath})
       result = append(result, resource)
     }
   }
@@ -89,7 +90,7 @@ func (fs *FileStorage) CreateResource(rpath string, content string) (*Resource, 
   f.WriteString(content)
 
   finfo, _ := f.Stat()
-  res := NewResource(rpath, finfo)
+  res := NewResource(rpath, &FileResourceAdapter{finfo, rpath})
   return &res, nil
 }
 
@@ -104,7 +105,7 @@ func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, 
   f.WriteString(content)
 
   finfo, _ := f.Stat()
-  res := NewResource(rpath, finfo)
+  res := NewResource(rpath, &FileResourceAdapter{finfo, rpath})
   return &res, nil
 }
 

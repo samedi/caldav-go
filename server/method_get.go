@@ -35,7 +35,7 @@ func (gh GetHandler) Handle() {
   if gh.onlyHeaders {
     response = ""
   } else {
-    response, _ = resource.GetData()
+    response, _ = resource.GetContentData()
   }
 
   respond(http.StatusOK, response, gh.writer)

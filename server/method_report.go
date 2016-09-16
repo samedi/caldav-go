@@ -96,8 +96,8 @@ func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filters [
   }
 
   if origin.IsCollection() {
-    collectionContent, _ := origin.GetCollectionContentPaths()
-    for _, path := range collectionContent {
+    collectionChildren, _ := origin.GetCollectionChildPaths()
+    for _, path := range collectionChildren {
       resource, found, err := storage.GetResource(path)
       if err != nil && err != data.ErrResourceNotFound {
         return nil, err

@@ -3,6 +3,7 @@ package files
 import (
   "strings"
   "path/filepath"
+  "caldav/lib"
 )
 
 const (
@@ -25,6 +26,5 @@ func JoinPaths(paths ...string) string {
 }
 
 func ToSlashPath(path string) string {
-  cleanPath := filepath.Clean(path)
-  return filepath.ToSlash(cleanPath)
+  return lib.ToSlashPath(path)
 }

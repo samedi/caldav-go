@@ -60,7 +60,7 @@ func (ms *MultistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
     pfound := false
     switch ptag {
     case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}:
-      pvalue.Content, pfound = resource.GetData()
+      pvalue.Content, pfound = resource.GetContentData()
     case xml.Name{Space: "DAV:", Local: "getetag"}:
       pvalue.Content, pfound = resource.GetEtag()
     case xml.Name{Space: "DAV:", Local: "getcontenttype"}:

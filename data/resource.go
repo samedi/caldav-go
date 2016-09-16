@@ -12,7 +12,6 @@ import (
   "caldav/files"
 )
 
-// TODO: rename it to Resource
 type ResourceInterface interface {
   ComponentName() string
   StartTimeUTC() time.Time
@@ -24,37 +23,46 @@ type ResourceInterface interface {
   GetPropertyParamValue(propName, paramName string) string
 }
 
+type ResourceAdapter interface {
+  IsCollection() bool
+  CalculateEtag() string
+  GetContent() string
+  GetContentSize() int64
+  GetCollectionChildPaths() []string
+  GetModTime() time.Time
+}
+
 type ResourceRecurrence struct {
   StartTime time.Time
   EndTime   time.Time
 }
 
-// TODO: rename it to ResourceFile
 type Resource struct {
   Name string
   Path string
-  PathSplit []string
-  File os.FileInfo
+
+  pathSplit []string
+  adapter ResourceAdapter
 }
 
-func NewResource(filePath string, fileInfo os.FileInfo) Resource {
-  pClean  := files.ToSlashPath(filePath)
+func NewResource(resPath string, adp ResourceAdapter) Resource {
+  pClean  := lib.ToSlashPath(resPath)
   pSplit  := strings.Split(strings.Trim(pClean, "/"), "/")
 
   return Resource{
-    Name: fileInfo.Name(),
+    Name: pSplit[len(pSplit) - 1],
     Path: pClean,
-    PathSplit: pSplit,
-    File: fileInfo,
+    pathSplit: pSplit,
+    adapter: adp,
   }
 }
 
 func (r *Resource) IsCollection() bool {
-  return r.File.IsDir()
+  return r.adapter.IsCollection()
 }
 
 func (r *Resource) IsPrincipal() bool {
-  return len(r.PathSplit) <= 1
+  return len(r.pathSplit) <= 1
 }
 
 func (r *Resource) ComponentName() string {
@@ -101,15 +109,11 @@ func (r *Resource) GetPropertyParamValue(propName, paramName string) string {
 }
 
 func (r *Resource) GetEtag() (string, bool) {
-  // returns ETag as the concatenated hex values of a file's
-	// modification time and size. This is not a reliable synchronization
-	// mechanism for directories, so for collections we mark it as not found.
   if r.IsCollection() {
     return "", false
   }
 
-  fi := r.File
-  return fmt.Sprintf(`"%x%x"`, fi.ModTime().UnixNano(), fi.Size()), true
+  return r.adapter.CalculateEtag(), true
 }
 
 func (r *Resource) GetContentType() (string, bool) {
@@ -124,23 +128,33 @@ func (r *Resource) GetDisplayName() (string, bool) {
    return r.Name, true
 }
 
+func (r *Resource) GetContentData() (string, bool) {
+  if r.IsCollection() {
+    return "", false
+  }
+
+  data := r.adapter.GetContent()
+  return data, true
+}
+
 func (r *Resource) GetContentLength() (string, bool) {
   // If its collection, it does not have any content, so mark it as not found
   if r.IsCollection() {
     return "", false
   }
 
-  return strconv.FormatInt(r.File.Size(), 10), true
+  contentSize := r.adapter.GetContentSize()
+  return strconv.FormatInt(contentSize, 10), true
 }
 
 func (r *Resource) GetLastModified(format string) (string, bool) {
-	return r.File.ModTime().Format(format), true
+  return r.adapter.GetModTime().Format(format), true
 }
 
 func (r *Resource) GetOwner() (string, bool) {
   var owner string
-  if len(r.PathSplit) > 1 {
-    owner = r.PathSplit[0]
+  if len(r.pathSplit) > 1 {
+    owner = r.pathSplit[0]
   } else {
     owner = ""
   }
@@ -158,36 +172,71 @@ func (r *Resource) GetOwnerPath() (string, bool) {
   }
 }
 
-func (r *Resource) GetData() (string, bool) {
-  if r.IsCollection() {
-    return "", false
-  }
-
-  data, err := ioutil.ReadFile(files.AbsPath(r.Path))
-  if err != nil {
-    // TODO: Log error
-    return "", false
-  }
-
-  return string(data), true
-}
-
-func (r *Resource) GetCollectionContentPaths() ([]string, bool) {
+func (r *Resource) GetCollectionChildPaths() ([]string, bool) {
   if !r.IsCollection() {
     return nil, false
   }
 
-  content, err := ioutil.ReadDir(files.AbsPath(r.Path))
+  paths := r.adapter.GetCollectionChildPaths()
+
+  if paths == nil {
+    return nil, false
+  }
+
+  return paths, true
+}
+
+type FileResourceAdapter struct {
+  finfo        os.FileInfo
+  resourcePath string
+}
+
+func (adp *FileResourceAdapter) IsCollection() bool {
+  return adp.finfo.IsDir()
+}
+
+func (adp *FileResourceAdapter) GetContent() string {
+  data, err := ioutil.ReadFile(files.AbsPath(adp.resourcePath))
+  if err != nil {
+    // TODO: Log error
+    return ""
+  }
+
+  return string(data)
+}
+
+func (adp *FileResourceAdapter) GetContentSize() int64 {
+  return adp.finfo.Size()
+}
+
+func (adp *FileResourceAdapter) CalculateEtag() string {
+  // returns ETag as the concatenated hex values of a file's
+	// modification time and size. This is not a reliable synchronization
+	// mechanism for directories, so for collections we return empty.
+  if adp.IsCollection() {
+    return ""
+  }
+
+  fi := adp.finfo
+  return fmt.Sprintf(`"%x%x"`, fi.ModTime().UnixNano(), fi.Size())
+}
+
+func (adp *FileResourceAdapter) GetModTime() time.Time {
+  return adp.finfo.ModTime()
+}
+
+func (adp *FileResourceAdapter) GetCollectionChildPaths() []string {
+  content, err := ioutil.ReadDir(files.AbsPath(adp.resourcePath))
 	if err != nil {
     // TODO: Log error
-    return nil, false
+    return nil
 	}
 
   result := []string{}
 	for _, file := range content {
-    fpath := files.JoinPaths(r.Path, file.Name())
+    fpath := files.JoinPaths(adp.resourcePath, file.Name())
     result = append(result, fpath)
 	}
 
-  return result, true
+  return result
 }
