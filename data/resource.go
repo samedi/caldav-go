@@ -3,12 +3,13 @@ package data
 import (
   "fmt"
   "os"
+  "time"
   "strings"
   "strconv"
-  "time"
   "io/ioutil"
 
   "caldav/lib"
+  "caldav/ical"
   "caldav/files"
 )
 
@@ -17,10 +18,10 @@ type ResourceInterface interface {
   StartTimeUTC() time.Time
   EndTimeUTC() time.Time
   Recurrences() []ResourceRecurrence
-  HasProperty(propName string) bool
-  GetPropertyValue(propName string) string
-  HasPropertyParam(propName, paramName string) bool
-  GetPropertyParamValue(propName, paramName string) string
+  HasProperty(propPath... string) bool
+  GetPropertyValue(propPath... string) string
+  HasPropertyParam(paramName... string) bool
+  GetPropertyParamValue(paramName... string) string
 }
 
 type ResourceAdapter interface {
@@ -43,6 +44,8 @@ type Resource struct {
 
   pathSplit []string
   adapter ResourceAdapter
+
+  emptyTime time.Time
 }
 
 func NewResource(resPath string, adp ResourceAdapter) Resource {
@@ -74,38 +77,59 @@ func (r *Resource) ComponentName() string {
 }
 
 func (r *Resource) StartTimeUTC() time.Time {
-  // TODO: implement based on the vevent component table - section 9.9
-  return time.Time{}
+  vevent := r.icalVEVENT()
+  dtstart := vevent.PropDate(ical.DTSTART, r.emptyTime)
+
+  if dtstart == r.emptyTime {
+    // TODO: log error of ical not having required DTSTART
+    return r.emptyTime // TODO: remove this after logging the error
+  }
+
+  return dtstart.UTC()
 }
 
 func (r *Resource) EndTimeUTC() time.Time {
-  // TODO: implement based on the vevent component table - section 9.9
-  return time.Time{}
+  vevent := r.icalVEVENT()
+  dtend := vevent.PropDate(ical.DTEND, r.emptyTime)
+
+  // when the DTEND property is not present, we just add the DURATION (if any) to the DTSTART
+  if dtend == r.emptyTime {
+    duration := vevent.PropDuration(ical.DURATION)
+    dtend = r.StartTimeUTC().Add(duration)
+  }
+
+  return dtend.UTC()
 }
 
 func (r *Resource) Recurrences() []ResourceRecurrence {
-  // TODO: implement
-  return nil
+  // TODO: Implement. This server does not support ical recurrences yet. We just return an empty array.
+  return []ResourceRecurrence{}
 }
 
-func (r *Resource) HasProperty(propName string) bool {
-  // TODO: implement
-  return false
+func (r *Resource) HasProperty(propPath... string) bool {
+  return r.GetPropertyValue(propPath...) != ""
 }
 
-func (r *Resource) GetPropertyValue(propName string) string {
-  // TODO: implement
-  return ""
+func (r *Resource) GetPropertyValue(propPath... string) string {
+  if propPath[0] == ical.VCALENDAR {
+    propPath = propPath[1:]
+  }
+
+  prop, _ := r.icalendar().DigProperty(propPath...)
+  return prop
 }
 
-func (r *Resource) HasPropertyParam(propName, paramName string) bool {
-  // TODO: implement
-  return false
+func (r *Resource) HasPropertyParam(paramPath... string) bool {
+  return r.GetPropertyParamValue(paramPath...) != ""
 }
 
-func (r *Resource) GetPropertyParamValue(propName, paramName string) string {
-  // TODO: implement
-  return ""
+func (r *Resource) GetPropertyParamValue(paramPath... string) string {
+  if paramPath[0] == ical.VCALENDAR {
+    paramPath = paramPath[1:]
+  }
+
+  param, _ := r.icalendar().DigParameter(paramPath...)
+  return param
 }
 
 func (r *Resource) GetEtag() (string, bool) {
@@ -184,6 +208,39 @@ func (r *Resource) GetCollectionChildPaths() ([]string, bool) {
   }
 
   return paths, true
+}
+
+// TODO: mnemonic
+func (r *Resource) icalVEVENT() *ical.Node {
+  vevent := r.icalendar().ChildByName(ical.VEVENT)
+  if vevent == nil {
+    // TODO: Log error
+
+    // returns an empty vevent
+    return &ical.Node{
+      Name: ical.VEVENT,
+    }
+  }
+
+  return vevent
+}
+
+// TODO: mnemonic
+func (r *Resource) icalendar() *ical.Node {
+  data, found := r.GetContentData()
+
+  if !found {
+    // TODO: Log error when resource does not have a content
+    return nil
+  }
+
+  icalNode, err := ical.ParseCalendar(data)
+  if err != nil {
+    // TODO: Log error
+    return nil
+  }
+
+  return icalNode
 }
 
 type FileResourceAdapter struct {

@@ -3,6 +3,7 @@ package test
 import (
   "testing"
   "time"
+  "strings"
   "caldav/data"
   "caldav/server"
 )
@@ -191,7 +192,7 @@ func TestMatch9(t *testing.T) {
   // does not contain the property UID - doesnt match!
   assertFilterDoesNotMatch(filterXML, res, t)
   // now contains the property UID - match!
-  res.addProperty("UID", "")
+  res.addProperty("VCALENDAR:VEVENT:UID", "")
   assertFilterMatch(filterXML, res, t)
 }
 
@@ -211,7 +212,7 @@ func TestMatch10(t *testing.T) {
   // therefore matching if the resource DOES NOT have the property UID
   res := FakeResource{}
   assertFilterMatch(filterXML, res, t)
-  res.addProperty("UID", "")
+  res.addProperty("VCALENDAR:VEVENT:UID", "")
   assertFilterDoesNotMatch(filterXML, res, t)
 }
 
@@ -233,10 +234,10 @@ func TestMatch11(t *testing.T) {
   // the resource does not have the property - doesnt match!
   assertFilterDoesNotMatch(filterXML, res, t)
   // the property content does not have the substring - doesnt match!
-  res.addProperty("UID", "DC6C50A017428C5216A2F1CD@foobar.com")
+  res.addProperty("VCALENDAR:VEVENT:UID", "DC6C50A017428C5216A2F1CD@foobar.com")
   assertFilterDoesNotMatch(filterXML, res, t)
   // the property content has the substring - match!
-  res.addProperty("UID", "DC6C50A017428C5216A2F1CD@example.com")
+  res.addProperty("VCALENDAR:VEVENT:UID", "DC6C50A017428C5216A2F1CD@example.com")
   assertFilterMatch(filterXML, res, t)
 
   // with `negate-condition` as "no"
@@ -289,7 +290,7 @@ func TestMatch12(t *testing.T) {
   // does not contain the property param ATTENDEE:PARTSTAT - doesnt match!
   assertFilterDoesNotMatch(filterXML, res, t)
   // now contains the property param ATTENDEE:PARTSTAT - match!
-  res.addPropertyParam("ATTENDEE", "PARTSTAT", "")
+  res.addPropertyParam("VCALENDAR:VEVENT:ATTENDEE:PARTSTAT", "")
   assertFilterMatch(filterXML, res, t)
 }
 
@@ -311,7 +312,7 @@ func TestMatch13(t *testing.T) {
   // therefore matching if the resource DOES NOT have the property param ATTENDEE:PARTSTAT
   res := FakeResource{}
   assertFilterMatch(filterXML, res, t)
-  res.addPropertyParam("ATTENDEE", "PARTSTAT", "")
+  res.addPropertyParam("VCALENDAR:VEVENT:ATTENDEE:PARTSTAT", "")
   assertFilterDoesNotMatch(filterXML, res, t)
 }
 
@@ -333,10 +334,10 @@ func TestMatch14(t *testing.T) {
   // the resource does not have the property param - doesnt match!
   assertFilterDoesNotMatch(filterXML, res, t)
   // the property param content does not have the substring - doesnt match!
-  res.addPropertyParam("ATTENDEE", "PARTSTAT", "FOO BAR")
+  res.addPropertyParam("VCALENDAR:VEVENT:ATTENDEE:PARTSTAT", "FOO BAR")
   assertFilterDoesNotMatch(filterXML, res, t)
   // the property param content has the substring - match!
-  res.addPropertyParam("ATTENDEE", "PARTSTAT", "FOO BAR NEEDS ACTION")
+  res.addPropertyParam("VCALENDAR:VEVENT:ATTENDEE:PARTSTAT", "FOO BAR NEEDS ACTION")
   assertFilterMatch(filterXML, res, t)
 }
 
@@ -395,61 +396,62 @@ func (r *FakeResource) addRecurrence(startStr string, endStr string) {
   })
 }
 
-func (r *FakeResource) HasProperty(propName string) bool {
+func (r *FakeResource) HasProperty(propPath... string) bool {
   if r.properties == nil {
     return false
   }
 
-  _, found := r.properties[propName]
+  propKey := r.getPropParamKey(propPath...)
+  _, found := r.properties[propKey]
   return found
 }
 
-func (r *FakeResource) GetPropertyValue(propName string) string {
+func (r *FakeResource) GetPropertyValue(propPath... string) string {
   if r.properties == nil {
     return ""
   }
 
-  return r.properties[propName]
+  propKey := r.getPropParamKey(propPath...)
+  return r.properties[propKey]
 }
 
-func (r *FakeResource) HasPropertyParam(propName, paramName string) bool {
+func (r *FakeResource) HasPropertyParam(paramPath... string) bool {
   if r.propertyParams == nil {
     return false
   }
 
-  paramKey := r.getParamKey(propName, paramName)
+  paramKey := r.getPropParamKey(paramPath...)
   _, found := r.propertyParams[paramKey]
   return found
 }
 
-func (r *FakeResource) GetPropertyParamValue(propName, paramName string) string {
+func (r *FakeResource) GetPropertyParamValue(paramPath... string) string {
   if r.propertyParams == nil {
     return ""
   }
 
-  paramKey := r.getParamKey(propName, paramName)
+  paramKey := r.getPropParamKey(paramPath...)
   return r.propertyParams[paramKey]
 }
 
-func (r *FakeResource) addProperty(propName, propValue string) {
+func (r *FakeResource) addProperty(propPath string, propValue string) {
   if r.properties == nil {
     r.properties = make(map[string]string)
   }
 
-  r.properties[propName] = propValue
+  r.properties[propPath] = propValue
 }
 
-func (r *FakeResource) addPropertyParam(propName, paramName, paramValue string) {
+func (r *FakeResource) addPropertyParam(paramPath string, paramValue string) {
   if r.propertyParams == nil {
     r.propertyParams = make(map[string]string)
   }
 
-  paramKey := r.getParamKey(propName, paramName)
-  r.propertyParams[paramKey] = paramValue
+  r.propertyParams[paramPath] = paramValue
 }
 
-func (r *FakeResource) getParamKey(propName, paramName string) string {
-  return propName + ":" + paramName
+func (r *FakeResource) getPropParamKey(ppath... string) string {
+  return strings.Join(ppath, ":")
 }
 
 func (r *FakeResource) parseTime(timeStr string) time.Time {

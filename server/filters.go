@@ -87,9 +87,11 @@ func (f *ResourceFilter) rootFilterMatch(target data.ResourceInterface) bool {
 
 // checks if all the root's child filters match the target resource
 func (f *ResourceFilter) rootChildrenMatch(target data.ResourceInterface) bool {
+  scope := []string{}
+
   for _, child := range f.getChildren() {
     // root filters only accept comp filters as children
-    if child.name != TAG_COMP_FILTER || !child.compMatch(target) {
+    if child.name != TAG_COMP_FILTER || !child.compMatch(target, scope) {
       return false
     }
   }
@@ -98,23 +100,25 @@ func (f *ResourceFilter) rootChildrenMatch(target data.ResourceInterface) bool {
 }
 
 // See RFC4791-9.7.1.
-func (f *ResourceFilter) compMatch(target data.ResourceInterface) bool {
-  compName := target.ComponentName()
+func (f *ResourceFilter) compMatch(target data.ResourceInterface, scope []string) bool {
+  targetComp := target.ComponentName()
+  compName   := f.attrs["name"]
 
   if f.isEmpty() {
     // Point #1 of RFC4791#9.7.1
-    return f.attrs["name"] == compName
+    return compName == targetComp
   } else if f.contains(TAG_IS_NOT_DEFINED) {
     // Point #2 of RFC4791#9.7.1
-    return f.attrs["name"] != compName
+    return compName != targetComp
   } else {
     // check each child of the current filter if they all match.
-    return f.compChildrenMatch(target)
+    childrenScope := append(scope, compName)
+    return f.compChildrenMatch(target, childrenScope)
   }
 }
 
 // checks if all the comp's child filters match the target resource
-func (f *ResourceFilter) compChildrenMatch(target data.ResourceInterface) bool {
+func (f *ResourceFilter) compChildrenMatch(target data.ResourceInterface, scope []string) bool {
   for _, child := range f.getChildren() {
     var match bool
 
@@ -124,10 +128,10 @@ func (f *ResourceFilter) compChildrenMatch(target data.ResourceInterface) bool {
       match = child.timeRangeMatch(target)
     case TAG_PROP_FILTER:
       // Point #4 of RFC4791#9.7.1
-      match = child.propMatch(target)
+      match = child.propMatch(target, scope)
     case TAG_COMP_FILTER:
       // Point #4 of RFC4791#9.7.1
-      match = child.compMatch(target)
+      match = child.compMatch(target, scope)
     }
 
     if !match {
@@ -204,25 +208,26 @@ func (f *ResourceFilter) timeRangeMatch(target data.ResourceInterface) bool {
 }
 
 // See RFC4791-9.7.2.
-func (f *ResourceFilter) propMatch(target data.ResourceInterface) bool {
+func (f *ResourceFilter) propMatch(target data.ResourceInterface, scope []string) bool {
   propName := f.attrs["name"]
+  propPath := append(scope, propName)
 
   if f.isEmpty() {
     // Point #1 of RFC4791#9.7.2
-    return target.HasProperty(propName)
+    return target.HasProperty(propPath...)
   } else if f.contains(TAG_IS_NOT_DEFINED) {
     // Point #2 of RFC4791#9.7.2
-    return !target.HasProperty(propName)
+    return !target.HasProperty(propPath...)
   } else {
     // check each child of the current filter if they all match.
-    return f.propChildrenMatch(target, propName)
+    return f.propChildrenMatch(target, propPath)
   }
 
   return false
 }
 
 // checks if all the prop's child filters match the target resource
-func (f *ResourceFilter) propChildrenMatch(target data.ResourceInterface, propName string) bool {
+func (f *ResourceFilter) propChildrenMatch(target data.ResourceInterface, propPath []string) bool {
   for _, child := range f.getChildren() {
     var match bool
 
@@ -234,11 +239,11 @@ func (f *ResourceFilter) propChildrenMatch(target data.ResourceInterface, propNa
       match = false
     case TAG_TEXT_MATCH:
       // Point #4 of RFC4791#9.7.2
-      propText := target.GetPropertyValue(propName)
+      propText := target.GetPropertyValue(propPath...)
       match = child.textMatch(propText)
     case TAG_PARAM_FILTER:
       // Point #4 of RFC4791#9.7.2
-      match = child.paramMatch(target, propName)
+      match = child.paramMatch(target, propPath)
     }
 
     if !match {
@@ -250,21 +255,21 @@ func (f *ResourceFilter) propChildrenMatch(target data.ResourceInterface, propNa
 }
 
 // See RFC4791-9.7.3
-func (f *ResourceFilter) paramMatch(target data.ResourceInterface, parentProp string) bool {
+func (f *ResourceFilter) paramMatch(target data.ResourceInterface, parentPropPath []string) bool {
   paramName := f.attrs["name"]
+  paramPath := append(parentPropPath, paramName)
 
   if f.isEmpty() {
     // Point #1 of RFC4791#9.7.3
-    return target.HasPropertyParam(parentProp, paramName)
+    return target.HasPropertyParam(paramPath...)
   } else if f.contains(TAG_IS_NOT_DEFINED) {
     // Point #2 of RFC4791#9.7.3
-    return !target.HasPropertyParam(parentProp, paramName)
+    return !target.HasPropertyParam(paramPath...)
   } else {
     child := f.getChildren()[0]
-
     // param filters can also have (only-one) nested text-match filter
     if child.name == TAG_TEXT_MATCH {
-      paramValue := target.GetPropertyParamValue(parentProp, paramName)
+      paramValue := target.GetPropertyParamValue(paramPath...)
       return child.textMatch(paramValue)
     }
   }

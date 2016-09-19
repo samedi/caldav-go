@@ -2,6 +2,8 @@ package test
 
 import (
   "testing"
+
+  "fmt"
   "time"
   "caldav/data"
 )
@@ -195,6 +197,163 @@ func TestCollectionChildPaths(t *testing.T) {
     t.Error("Collection child paths should be [/foo/bar /foo/baz] and it was", paths)
   }
 }
+
+func TestStartEndTimesUTC(t *testing.T) {
+  newResource := func(timeInfo string) data.Resource {
+    adp := new(FakeResourceAdapter)
+    adp.contentData = fmt.Sprintf(`
+    BEGIN:VCALENDAR
+    BEGIN:VTIMEZONE
+    TZID:Europe/Berlin
+    BEGIN:DAYLIGHT
+    TZOFFSETFROM:+0100
+    TZOFFSETTO:+0200
+    TZNAME:CEST
+    DTSTART:19700329T020000
+    RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3
+    END:DAYLIGHT
+    BEGIN:STANDARD
+    TZOFFSETFROM:+0200
+    TZOFFSETTO:+0100
+    TZNAME:CET
+    DTSTART:19701025T030000
+    RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+    END:STANDARD
+    END:VTIMEZONE
+    BEGIN:VEVENT
+    %s
+    END:VEVENT
+    END:VCALENDAR
+    `, timeInfo)
+
+    return data.NewResource("/foo", adp)
+  }
+
+  assertTime := func(target, expected time.Time) {
+    if !(target == expected) {
+      t.Error("Wrong resource time. Expected:", expected, "Got:", target)
+    }
+  }
+
+  res := newResource(`
+    DTSTART;TZID=Europe/Berlin:20160914T170000
+    DTEND;TZID=Europe/Berlin:20160915T180000
+  `)
+
+  // test start time in UTC
+  assertTime(res.StartTimeUTC(), time.Date(2016, 9, 14, 15, 0, 0, 0, time.UTC))
+  // test end time in UTC
+  assertTime(res.EndTimeUTC(), time.Date(2016, 9, 15, 16, 0, 0, 0, time.UTC))
+
+  // test `end` time in UTC when DTEND is not present but DURATION is
+  // in this case, the `end` time has to be DTSTART + DURATION
+
+  res = newResource(`
+    DTSTART;TZID=Europe/Berlin:20160914T170000
+    DURATION:PT3H10M1S
+  `)
+
+  assertTime(res.EndTimeUTC(), time.Date(2016, 9, 14, 18, 10, 1, 0, time.UTC))
+
+  res = newResource(`
+    DTSTART;TZID=Europe/Berlin:20160914T170000
+    DURATION:PT10M
+  `)
+
+  assertTime(res.EndTimeUTC(), time.Date(2016, 9, 14, 15, 10, 0, 0, time.UTC))
+
+  res = newResource(`
+    DTSTART;TZID=Europe/Berlin:20160914T170000
+    DURATION:PT1S
+  `)
+
+  assertTime(res.EndTimeUTC(), time.Date(2016, 9, 14, 15, 0, 1, 0, time.UTC))
+
+  // test end time in UTC when DTEND and DURATION are not present
+  // in this case, the `end` time has to be equals to DTSTART time
+
+  res = newResource(`
+    DTSTART;TZID=Europe/Berlin:20160914T170000
+  `)
+
+  assertTime(res.EndTimeUTC(), time.Date(2016, 9, 14, 15, 0, 0, 0, time.UTC))
+}
+
+func TestProperties(t *testing.T) {
+  adp := new(FakeResourceAdapter)
+  res := data.NewResource("/foo", adp)
+
+  adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000
+  END:VEVENT
+  END:VCALENDAR
+  `
+
+  // asserts that the resource does not have the property VEVENT->DTEND
+  if res.HasProperty("VEVENT", "DTEND") || res.GetPropertyValue("VEVENT", "DTEND") != "" {
+    t.Error("Resource should not have the property")
+  }
+
+  adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000
+  DTEND:20160915T170000
+  END:VEVENT
+  END:VCALENDAR
+  `
+
+  // asserts that the resource has the property VEVENT->DTEND and it returns the correct value
+  if !res.HasProperty("VEVENT", "DTEND") || res.GetPropertyValue("VEVENT", "DTEND") != "20160915T170000" {
+    t.Error("Resource should have the property")
+  }
+
+  // asserts that the resource has the property VCALENDAR->VEVENT->DTEND and it returns the correct value
+  // (VCALENDAR is ignored when passing the prop path)
+  if !res.HasProperty("VCALENDAR", "VEVENT", "DTEND") || res.GetPropertyValue("VCALENDAR", "VEVENT", "DTEND") == "" {
+    t.Error("Resource should have the property")
+  }
+}
+
+func TestPropertyParams(t *testing.T) {
+  adp := new(FakeResourceAdapter)
+  res := data.NewResource("/foo", adp)
+
+  adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  ATTENDEE:FOO
+  END:VEVENT
+  END:VCALENDAR
+  `
+
+  // asserts that the resource does not have the property param VEVENT->ATTENDEE->PARTSTAT
+  if res.HasPropertyParam("VEVENT", "ATTENDEE", "PARTSTAT") || res.GetPropertyParamValue("VEVENT", "ATTENDEE", "PARTSTAT") != "" {
+    t.Error("Resouce should not have the property param")
+  }
+
+  adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  ATTENDEE;PARTSTAT=NEEDS-ACTION:FOO
+  END:VEVENT
+  END:VCALENDAR
+  `
+
+  // asserts that the resource has the property param VEVENT->ATTENDEE->PARTSTAT and it returns the correct value
+  if !res.HasPropertyParam("VEVENT", "ATTENDEE", "PARTSTAT") || res.GetPropertyParamValue("VEVENT", "ATTENDEE", "PARTSTAT") != "NEEDS-ACTION" {
+    t.Error("Resource should have the property param")
+  }
+
+  // asserts that the resource has the property VEVENT->ATTENDEE->PARTSTAT and it returns the correct value
+  // (VCALENDAR is ignored when passing the prop path)
+  if !res.HasPropertyParam("VCALENDAR", "VEVENT", "ATTENDEE", "PARTSTAT") || res.GetPropertyParamValue("VCALENDAR", "VEVENT", "ATTENDEE", "PARTSTAT") != "NEEDS-ACTION" {
+    t.Error("Resource should have the property param")
+  }
+}
+
 
 type FakeResourceAdapter struct {
   collection bool
