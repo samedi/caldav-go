@@ -282,7 +282,7 @@ func TestPROPFIND(t *testing.T) {
 func TestREPORT(t *testing.T) {
   collection := "/test-data/report/"
   rName := "123-456-789.ics"
-  createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
+  createResource(collection, rName, "BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT")
 
   // Test 1: when the URL path points to a collection and passing the list of hrefs in the body.
   path := collection
@@ -292,7 +292,6 @@ func TestREPORT(t *testing.T) {
   <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop>
       <D:getetag/>
-      <C:calendar-data/>
     </D:prop>
     <D:href>/test-data/report/123-456-789.ics</D:href>
     <D:href>/test-data/report/000-000-000.ics</D:href>
@@ -310,7 +309,6 @@ func TestREPORT(t *testing.T) {
       <D:propstat>
         <D:prop>
           <D:getetag>?</D:getetag>
-          <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
         </D:prop>
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>
@@ -339,7 +337,49 @@ func TestREPORT(t *testing.T) {
       <D:propstat>
         <D:prop>
           <D:getetag>?</D:getetag>
-          <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `
+
+  resp = doRequest("REPORT", path, reportXML, nil)
+  respBody = readResponseBody(resp)
+  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+
+  // Test 3: when the URL points to a collection and passing filter rules in the body
+  path = collection
+
+  reportXML = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+    <D:prop>
+      <D:getetag/>
+    </D:prop>
+    <C:filter>
+      <C:comp-filter name="VCALENDAR">
+        <C:comp-filter name="VEVENT">
+          <C:prop-filter name="SUMMARY">
+            <C:text-match>FOO</C:text-match>
+          </C:prop-filter>
+        </C:comp-filter>
+      </C:comp-filter>
+    </C:filter>
+  </C:calendar-query>
+  `
+
+  createResource(collection, "football.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Football\nEND:VEVENT\nEND:VCALENDAR")
+  createResource(collection, "volleyball.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Volleyball\nEND:VEVENT\nEND:VCALENDAR")
+
+  expectedRespBody = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/report/football.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
         </D:prop>
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>

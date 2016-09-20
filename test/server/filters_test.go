@@ -25,7 +25,7 @@ func TestParseFilter(t *testing.T) {
 
   for _, invalidXML := range invalidXMLs {
     filter, err = server.ParseFilterFromXML(invalidXML)
-    if err == nil || filter != nil {
+    if err == nil {
       t.Error("Parsing filter from an invalid XML should return an error")
     }
   }

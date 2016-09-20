@@ -1,7 +1,6 @@
 package server
 
 import (
-  "fmt"
   "time"
   "strings"
   "errors"
@@ -37,7 +36,8 @@ type ResourceFilter struct {
 func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
   doc := etree.NewDocument()
   if err := doc.ReadFromString(xml); err != nil {
-    return nil, err
+    // TODO: log error
+    return new(ResourceFilter), err
   }
 
   // Right now we're searching for a <filter> tag to initialize the filter struct from it.
@@ -45,7 +45,8 @@ func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
   // TODO: check for XML namespaces and restrict it to accept only CALDAV:filter tag.
   elem := doc.FindElement("//" + TAG_FILTER)
   if elem == nil {
-    return nil, errors.New(fmt.Sprintf("the parsed XML should contain a <%s></%s> element", TAG_FILTER, TAG_FILTER))
+    // TODO: log error
+    return new(ResourceFilter), errors.New("the parsed XML should contain a <" + TAG_FILTER + "> element")
   }
 
   filter := newFilterFromEtreeElem(elem)

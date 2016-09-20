@@ -1,6 +1,7 @@
 package server
 
 import (
+  "fmt"
   "strings"
   "net/http"
   "encoding/xml"
@@ -64,9 +65,18 @@ type reportPropXML struct {
 
 type reportRootXML struct {
   XMLName xml.Name
-  Prop    reportPropXML  `xml:"DAV: prop"`
-  Hrefs   []string       `xml:"DAV: href"`
-  Filters []string       `xml:"urn:ietf:params:xml:ns:caldav: filter"`
+  Prop    reportPropXML   `xml:"DAV: prop"`
+  Hrefs   []string        `xml:"DAV: href"`
+  Filters reportFilterXML `xml:"urn:ietf:params:xml:ns:caldav filter"`
+}
+
+type reportFilterXML struct {
+  XMLName      xml.Name
+  InnerContent string    `xml:",innerxml"`
+}
+
+func (this reportFilterXML) toString() string {
+  return fmt.Sprintf("<%s>%s</%s>", this.XMLName.Local, this.InnerContent, this.XMLName.Local)
 }
 
 // Wraps a resource that has to be reported, either fetched by filters or by a list.
@@ -85,15 +95,11 @@ type reportRes struct {
 // match the filter will not appear in the response result.
 // If the origin resource is not a collection, the function just returns it and ignore any filter processing.
 // [See RFC4791#section-7.8]
-func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filters []string) ([]reportRes, error) {
+func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXML reportFilterXML) ([]reportRes, error) {
   // The list of resources that has to be reported back in the response.
   reps := []reportRes{}
 
-  // TODO: update after filters implementation is finished
-  dummyFilter := ResourceFilter{
-    name: "C:comp-filter",
-    attrs: map[string]string{"name": "VEVENT"},
-  }
+  filter, _ := ParseFilterFromXML(filtersXML.toString())
 
   if origin.IsCollection() {
     collectionChildren, _ := origin.GetCollectionChildPaths()
@@ -104,7 +110,7 @@ func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filters [
       }
 
       // onlye add it if the resource was not found or if the resource match the filters
-      if !found || dummyFilter.Match(resource) {
+      if !found || filter.Match(resource) {
         reps = append(reps, reportRes{path, resource, found})
       }
     }
