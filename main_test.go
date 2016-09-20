@@ -141,8 +141,8 @@ func TestPROPFIND(t *testing.T) {
   createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
 
   propfindXML := `
-<?xml version="1.0" encoding="utf-8" ?>
- <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <?xml version="1.0" encoding="utf-8" ?>
+  <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
    <D:prop>
      <D:getetag/>
      <D:getcontenttype/>
@@ -159,48 +159,48 @@ func TestPROPFIND(t *testing.T) {
      <D:current-user-principal/>
      <C:supported-calendar-component-set/>
    </D:prop>
- </D:propfind>
-`
+  </D:propfind>
+  `
   expectedRespBody := `
-<?xml version="1.0" encoding="UTF-8"?>
-<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-  <D:response>
-    <D:href>/test-data/propfind/123-456-789.ics</D:href>
-    <D:propstat>
-      <D:prop>
-        <D:getetag>?</D:getetag>
-        <D:getcontenttype>text/calendar; component=vcalendar</D:getcontenttype>
-        <D:getcontentlength>39</D:getcontentlength>
-        <D:displayname>123-456-789.ics</D:displayname>
-        <D:getlastmodified>?</D:getlastmodified>
-        <D:owner>/test-data/</D:owner>
-        <CS:getctag>?</CS:getctag>
-        <D:principal-URL>
-          <D:href>/test-data/propfind/123-456-789.ics</D:href>
-        </D:principal-URL>
-        <D:principal-collection-set>
-          <D:href>/test-data/propfind/123-456-789.ics</D:href>
-        </D:principal-collection-set>
-        <C:calendar-user-address-set>
-          <D:href>/test-data/propfind/123-456-789.ics</D:href>
-        </C:calendar-user-address-set>
-        <C:calendar-home-set>
-          <D:href>/test-data/propfind/123-456-789.ics</D:href>
-        </C:calendar-home-set>
-        <D:resourcetype/>
-      </D:prop>
-      <D:status>HTTP/1.1 200 OK</D:status>
-    </D:propstat>
-    <D:propstat>
-      <D:prop>
-        <D:current-user-principal/>
-        <C:supported-calendar-component-set/>
-      </D:prop>
-      <D:status>HTTP/1.1 404 Not Found</D:status>
-    </D:propstat>
-  </D:response>
-</D:multistatus>
-`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/propfind/123-456-789.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
+          <D:getcontenttype>text/calendar; component=vcalendar</D:getcontenttype>
+          <D:getcontentlength>39</D:getcontentlength>
+          <D:displayname>123-456-789.ics</D:displayname>
+          <D:getlastmodified>?</D:getlastmodified>
+          <D:owner>/test-data/</D:owner>
+          <CS:getctag>?</CS:getctag>
+          <D:principal-URL>
+            <D:href>/test-data/propfind/123-456-789.ics</D:href>
+          </D:principal-URL>
+          <D:principal-collection-set>
+            <D:href>/test-data/propfind/123-456-789.ics</D:href>
+          </D:principal-collection-set>
+          <C:calendar-user-address-set>
+            <D:href>/test-data/propfind/123-456-789.ics</D:href>
+          </C:calendar-user-address-set>
+          <C:calendar-home-set>
+            <D:href>/test-data/propfind/123-456-789.ics</D:href>
+          </C:calendar-home-set>
+          <D:resourcetype/>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+      <D:propstat>
+        <D:prop>
+          <D:current-user-principal/>
+          <C:supported-calendar-component-set/>
+        </D:prop>
+        <D:status>HTTP/1.1 404 Not Found</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `
 
   resp = doRequest("PROPFIND", rpath, propfindXML, nil)
   respBody := readResponseBody(resp)
@@ -212,31 +212,31 @@ func TestPROPFIND(t *testing.T) {
   headers := make(map[string]string)
 
   propfindXML = `
-<?xml version="1.0" encoding="utf-8" ?>
- <D:propfind xmlns:D="DAV:">
+  <?xml version="1.0" encoding="utf-8" ?>
+  <D:propfind xmlns:D="DAV:">
    <D:prop>
      <D:getcontenttype/>
    </D:prop>
- </D:propfind>
-`
+  </D:propfind>
+  `
 
   // test PROPFIND with depth 0
   headers["Depth"] = "0"
 
   expectedRespBody = `
-<?xml version="1.0" encoding="UTF-8"?>
-<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-  <D:response>
-    <D:href>/test-data/propfind</D:href>
-    <D:propstat>
-      <D:prop>
-        <D:getcontenttype>text/calendar</D:getcontenttype>
-      </D:prop>
-      <D:status>HTTP/1.1 200 OK</D:status>
-    </D:propstat>
-  </D:response>
-</D:multistatus>
-`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/propfind</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getcontenttype>text/calendar</D:getcontenttype>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `
 
   resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
@@ -246,28 +246,28 @@ func TestPROPFIND(t *testing.T) {
   headers["Depth"] = "1"
 
   expectedRespBody = `
-<?xml version="1.0" encoding="UTF-8"?>
-<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-  <D:response>
-    <D:href>/test-data/propfind</D:href>
-    <D:propstat>
-      <D:prop>
-        <D:getcontenttype>text/calendar</D:getcontenttype>
-      </D:prop>
-      <D:status>HTTP/1.1 200 OK</D:status>
-    </D:propstat>
-  </D:response>
-  <D:response>
-    <D:href>/test-data/propfind/123-456-789.ics</D:href>
-    <D:propstat>
-      <D:prop>
-        <D:getcontenttype>text/calendar; component=vcalendar</D:getcontenttype>
-      </D:prop>
-      <D:status>HTTP/1.1 200 OK</D:status>
-    </D:propstat>
-  </D:response>
-</D:multistatus>
-`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/propfind</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getcontenttype>text/calendar</D:getcontenttype>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+    <D:response>
+      <D:href>/test-data/propfind/123-456-789.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getcontenttype>text/calendar; component=vcalendar</D:getcontenttype>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `
 
   resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
@@ -288,39 +288,39 @@ func TestREPORT(t *testing.T) {
   path := collection
 
   reportXML := `
-<?xml version="1.0" encoding="UTF-8"?>
-<C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
-  <D:prop>
-    <D:getetag/>
-    <C:calendar-data/>
-  </D:prop>
-  <D:href>/test-data/report/123-456-789.ics</D:href>
-  <D:href>/test-data/report/000-000-000.ics</D:href>
-  <D:href>/foo/bar</D:href>
-</C:calendar-multiget>
-`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+    <D:prop>
+      <D:getetag/>
+      <C:calendar-data/>
+    </D:prop>
+    <D:href>/test-data/report/123-456-789.ics</D:href>
+    <D:href>/test-data/report/000-000-000.ics</D:href>
+    <D:href>/foo/bar</D:href>
+  </C:calendar-multiget>
+  `
 
   // the response should contain only the hrefs that belong to the collection.
   // the ones that do not belong are ignored.
   expectedRespBody := `
-<?xml version="1.0" encoding="UTF-8"?>
-<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-  <D:response>
-    <D:href>/test-data/report/123-456-789.ics</D:href>
-    <D:propstat>
-      <D:prop>
-        <D:getetag>?</D:getetag>
-        <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
-      </D:prop>
-      <D:status>HTTP/1.1 200 OK</D:status>
-    </D:propstat>
-  </D:response>
-  <D:response>
-    <D:href>/test-data/report/000-000-000.ics</D:href>
-    <D:status>HTTP/1.1 404 Not Found</D:status>
-  </D:response>
-</D:multistatus>
-`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/report/123-456-789.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
+          <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+    <D:response>
+      <D:href>/test-data/report/000-000-000.ics</D:href>
+      <D:status>HTTP/1.1 404 Not Found</D:status>
+    </D:response>
+  </D:multistatus>
+  `
 
   resp := doRequest("REPORT", path, reportXML, nil)
   respBody := readResponseBody(resp)
@@ -332,26 +332,25 @@ func TestREPORT(t *testing.T) {
   // the response should contain only the resource from the URL.
   // the rest are ignored
   expectedRespBody = `
-<?xml version="1.0" encoding="UTF-8"?>
-<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-  <D:response>
-    <D:href>/test-data/report/123-456-789.ics</D:href>
-    <D:propstat>
-      <D:prop>
-        <D:getetag>?</D:getetag>
-        <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
-      </D:prop>
-      <D:status>HTTP/1.1 200 OK</D:status>
-    </D:propstat>
-  </D:response>
-</D:multistatus>
-`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/report/123-456-789.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
+          <C:calendar-data>BEGIN:VEVENT; SUMMARY:Party; END:VEVENT</C:calendar-data>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
   assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
 }
-
 
 // ================ FUNCS ========================
 
@@ -408,7 +407,7 @@ func multistatusXML(xml string) string {
     xml = re.ReplaceAllString(xml, v)
   }
 
-  return xml
+  return strings.TrimSpace(xml)
 }
 
 func checkerr(err error) {
