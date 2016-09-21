@@ -3,8 +3,8 @@ package server
 import (
   "fmt"
   "net/http"
-  "bytes"
   "encoding/xml"
+  "caldav/lib"
   "caldav/data"
   "caldav/ixml"
 )
@@ -127,33 +127,33 @@ func (ms *MultistatusResp) AddResponse(href string, found bool, propstats map[in
 
 func (ms *MultistatusResp) ToXML() string {
   // init multistatus
-  var bf bytes.Buffer
-  bf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-  bf.WriteString(fmt.Sprintf(`<D:multistatus %s>`, ixml.Namespaces()))
+  var bf lib.StringBuffer
+  bf.Write(`<?xml version="1.0" encoding="UTF-8"?>`)
+  bf.Write(`<D:multistatus %s>`, ixml.Namespaces())
 
   // iterate over event hrefs and build multistatus XML on the fly
   for _, response := range ms.Responses {
-    bf.WriteString("<D:response>")
-    bf.WriteString(fmt.Sprintf("<D:href>%s</D:href>", response.Href))
+    bf.Write("<D:response>")
+    bf.Write("<D:href>%s</D:href>", response.Href)
 
     if response.Found {
       for status, props := range response.Propstats {
-        bf.WriteString("<D:propstat>")
-        bf.WriteString("<D:prop>")
+        bf.Write("<D:propstat>")
+        bf.Write("<D:prop>")
         for _, prop := range props {
-          bf.WriteString(ms.propToXML(prop))
+          bf.Write(ms.propToXML(prop))
         }
-        bf.WriteString("</D:prop>")
-        bf.WriteString(ixml.StatusTag(status))
-        bf.WriteString("</D:propstat>")
+        bf.Write("</D:prop>")
+        bf.Write(ixml.StatusTag(status))
+        bf.Write("</D:propstat>")
       }
     } else {
       // if does not find the resource set 404
-      bf.WriteString(ixml.StatusTag(http.StatusNotFound))
+      bf.Write(ixml.StatusTag(http.StatusNotFound))
     }
-    bf.WriteString("</D:response>")
+    bf.Write("</D:response>")
   }
-  bf.WriteString("</D:multistatus>")
+  bf.Write("</D:multistatus>")
 
   return bf.String()
 }
