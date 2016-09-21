@@ -1,6 +1,7 @@
 package server
 
 import (
+  "log"
   "time"
   "strings"
   "errors"
@@ -36,7 +37,7 @@ type ResourceFilter struct {
 func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
   doc := etree.NewDocument()
   if err := doc.ReadFromString(xml); err != nil {
-    // TODO: log error
+    log.Printf("ERROR: Could not parse filter from XML.\n%s", xml)
     return new(ResourceFilter), err
   }
 
@@ -45,8 +46,8 @@ func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
   // TODO: check for XML namespaces and restrict it to accept only CALDAV:filter tag.
   elem := doc.FindElement("//" + TAG_FILTER)
   if elem == nil {
-    // TODO: log error
-    return new(ResourceFilter), errors.New("the parsed XML should contain a <" + TAG_FILTER + "> element")
+    log.Printf("WARNING: The filter XML should contain a <%s> element.\n%s", TAG_FILTER, xml)
+    return new(ResourceFilter), errors.New("invalid XML filter")
   }
 
   filter := newFilterFromEtreeElem(elem)
@@ -171,13 +172,13 @@ func (f *ResourceFilter) timeRangeMatch(target data.ResourceInterface) bool {
 
   rangeStart, err := time.Parse(timeParseFormat, startAttr)
   if err != nil {
-    // TODO: Log error
+    log.Printf("ERROR: Could not parse start time in time-range filter.\nError: %s.\nStart attr: %s", err, startAttr)
     return false
   }
 
   rangeEnd, err := time.Parse(timeParseFormat, endAttr)
   if err != nil {
-    // TODO: Log error
+    log.Printf("ERROR: Could not parse end time in time-range filter.\nError: %s.\nEnd attr: %s", err, endAttr)
     return false
   }
 

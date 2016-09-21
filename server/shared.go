@@ -1,7 +1,7 @@
 package server
 
 import (
-  "fmt"
+  "log"
 	"io"
   "io/ioutil"
   "net/http"
@@ -50,34 +50,38 @@ func readRequestBody(request *http.Request) string {
 }
 
 func logRequest(request *http.Request, body string) {
-  fmt.Printf("\n** %s REQUEST: %s **", request.Method, request.URL.Path)
-  fmt.Printf("\nRequest headers:\n")
+  var msg lib.StringBuffer
+  msg.Write("\n** %s REQUEST: %s **\n", request.Method, request.URL.Path)
+  msg.Write("\nRequest headers:\n")
   for hkey, hvalue := range request.Header {
-    fmt.Printf("%s: %s\n", hkey, hvalue)
+    msg.Write("%s: %s\n", hkey, hvalue)
   }
   if body != "" {
-    fmt.Printf("\nRequest content:\n%s\n", gohtml.Format(body))
+    msg.Write("\nRequest content:\n%s\n\n", gohtml.Format(body))
   }
+
+  log.Printf(msg.String())
 }
 
 func respond(status int, body string, writer http.ResponseWriter) {
+  var msg lib.StringBuffer
   if body != "" {
-    fmt.Printf("\nResponse content:\n%s\n", gohtml.Format(body))
+    msg.Write("\nResponse content:\n%s\n", gohtml.Format(body))
   }
 
-  fmt.Printf("\nResponse headers:\n")
+  msg.Write("\nResponse headers:\n")
   for hkey, hvalue := range writer.Header() {
-    fmt.Printf("%s: %s\n", hkey, hvalue)
+    msg.Write("%s: %s\n", hkey, hvalue)
   }
 
   writer.WriteHeader(status)
-  fmt.Printf("\nAnswer status: %d %s\n\n", status, http.StatusText(status))
+  msg.Write("\nAnswer status: %d %s\n\n", status, http.StatusText(status))
 
+  log.Printf(msg.String())
   io.WriteString(writer, body)
 }
 
 func respondWithError(err error, writer http.ResponseWriter) {
-  // TODO: Better logging
-  fmt.Printf("\n*** Error: %s ***\n", err)
+  log.Printf("\n*** Error: %s ***\n", err)
   respond(http.StatusInternalServerError, "", writer)
 }

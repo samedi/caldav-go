@@ -1,8 +1,9 @@
 package data
 
 import (
-  "fmt"
   "os"
+  "fmt"
+  "log"
   "time"
   "strings"
   "strconv"
@@ -81,8 +82,8 @@ func (r *Resource) StartTimeUTC() time.Time {
   dtstart := vevent.PropDate(ical.DTSTART, r.emptyTime)
 
   if dtstart == r.emptyTime {
-    // TODO: log error of ical not having required DTSTART
-    return r.emptyTime // TODO: remove this after logging the error
+    log.Printf("WARNING: The property DTSTART was not found in the resource's ical data.\nResource path: %s", r.Path)
+    return r.emptyTime
   }
 
   return dtstart.UTC()
@@ -213,10 +214,11 @@ func (r *Resource) GetCollectionChildPaths() ([]string, bool) {
 // TODO: mnemonic
 func (r *Resource) icalVEVENT() *ical.Node {
   vevent := r.icalendar().ChildByName(ical.VEVENT)
-  if vevent == nil {
-    // TODO: Log error
 
-    // returns an empty vevent
+  // if nil, log it and return an empty vevent
+  if vevent == nil {
+    log.Printf("WARNING: The resource's ical data is missing the VEVENT property.\nResource path: %s", r.Path)
+
     return &ical.Node{
       Name: ical.VEVENT,
     }
@@ -230,14 +232,18 @@ func (r *Resource) icalendar() *ical.Node {
   data, found := r.GetContentData()
 
   if !found {
-    // TODO: Log error when resource does not have a content
-    return nil
+    log.Printf("WARNING: The resource's ical data does not have any data.\nResource path: %s", r.Path)
+    return &ical.Node{
+      Name: ical.VCALENDAR,
+    }
   }
 
   icalNode, err := ical.ParseCalendar(data)
   if err != nil {
-    // TODO: Log error
-    return nil
+    log.Printf("ERROR: Could not parse the resource's ical data.\nError: %s.\nResource path: %s", err, r.Path)
+    return &ical.Node{
+      Name: ical.VCALENDAR,
+    }
   }
 
   return icalNode
@@ -255,7 +261,7 @@ func (adp *FileResourceAdapter) IsCollection() bool {
 func (adp *FileResourceAdapter) GetContent() string {
   data, err := ioutil.ReadFile(files.AbsPath(adp.resourcePath))
   if err != nil {
-    // TODO: Log error
+    log.Printf("ERROR: Could not read file content for the resource.\nError: %s.\nResource path: %s.", err, adp.resourcePath)
     return ""
   }
 
@@ -285,7 +291,7 @@ func (adp *FileResourceAdapter) GetModTime() time.Time {
 func (adp *FileResourceAdapter) GetCollectionChildPaths() []string {
   content, err := ioutil.ReadDir(files.AbsPath(adp.resourcePath))
 	if err != nil {
-    // TODO: Log error
+    log.Printf("ERROR: Could not read resource collection as file directory.\nError: %s.\nResource path: %s.", err, adp.resourcePath)
     return nil
 	}
 
