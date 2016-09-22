@@ -17,6 +17,7 @@ type Storage interface {
   IsResourcePresent(rpath string) bool
   CreateResource(content string) (Resource, error)
   UpdateResource(rpath string, content string) (Resource, error)
+  DeleteResource(rpath string) error
 }
 
 type FileStorage struct {
