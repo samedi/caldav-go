@@ -1,13 +1,8 @@
-package server
+package caldav
 
 import (
   "net/http"
 )
-
-func StartServer() {
-  http.HandleFunc("/", RequestHandler)
-	http.ListenAndServe(":8000", nil)
-}
 
 func RequestHandler(writer http.ResponseWriter, request *http.Request) {
   requestBody := readRequestBody(request)

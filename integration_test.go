@@ -1,4 +1,4 @@
-package test
+package caldav
 
 import (
   "fmt"
@@ -9,14 +9,22 @@ import (
   "regexp"
   "net/http"
   "io/ioutil"
-  "caldav/server"
 )
 
 // ============= TESTS ======================
 
 func TestMain(m *testing.M) {
-	go server.StartServer()
+  go startServer()
 	os.Exit(m.Run())
+}
+
+const (
+  TEST_SERVER_PORT = "8001"
+)
+
+func startServer() {
+  http.HandleFunc("/", RequestHandler)
+	http.ListenAndServe(":" + TEST_SERVER_PORT, nil)
 }
 
 func TestOPTIONS(t *testing.T) {
@@ -396,14 +404,14 @@ func TestREPORT(t *testing.T) {
 
 func doRequest(method, path, body string, headers map[string]string) *http.Response {
   client := &http.Client{}
-  url := "http://localhost:8000" + path
+  url := "http://localhost:" + TEST_SERVER_PORT + path
   req, err := http.NewRequest(method, url, strings.NewReader(body))
-  checkerr(err)
+  panicerr(err)
   for k, v := range headers {
     req.Header.Add(k, v)
   }
   resp, err := client.Do(req)
-  checkerr(err)
+  panicerr(err)
 
   return resp
 }
@@ -411,7 +419,7 @@ func doRequest(method, path, body string, headers map[string]string) *http.Respo
 func readResponseBody(resp *http.Response) string {
   defer resp.Body.Close()
   body, err := ioutil.ReadAll(resp.Body)
-  checkerr(err)
+  panicerr(err)
 
   return string(body)
 }
@@ -419,7 +427,7 @@ func readResponseBody(resp *http.Response) string {
 func readResource(path string) string {
   pwd, _ := os.Getwd()
   data, err := ioutil.ReadFile(pwd + path)
-  checkerr(err)
+  panicerr(err)
 
   return string(data)
 }
@@ -427,9 +435,9 @@ func readResource(path string) string {
 func createResource(collection, rName, data string) {
   pwd, _ := os.Getwd()
   err := os.MkdirAll(pwd + collection, os.ModePerm)
-  checkerr(err)
+  panicerr(err)
   f, err := os.Create(pwd + collection + rName)
-  checkerr(err)
+  panicerr(err)
   f.WriteString(data)
 }
 
@@ -448,12 +456,6 @@ func multistatusXML(xml string) string {
   }
 
   return strings.TrimSpace(xml)
-}
-
-func checkerr(err error) {
-  if err != nil {
-    panic(err)
-  }
 }
 
 // ================= ASSERTIONS ============================
@@ -487,7 +489,7 @@ func assertResourceExists(rpath string, t *testing.T) {
     logFailedLine()
     t.Error("Resource", rpath, "does not exist")
   } else {
-    checkerr(err)
+    panicerr(err)
   }
 }
 
@@ -495,7 +497,7 @@ func assertResourceData(rpath, expectation string, t *testing.T) {
   pwd, _ := os.Getwd()
   data, err := ioutil.ReadFile(pwd + rpath)
   dataStr := string(data)
-  checkerr(err)
+  panicerr(err)
   if dataStr != expectation {
     logFailedLine()
     t.Error("Expected:", expectation, "| Got:", dataStr)

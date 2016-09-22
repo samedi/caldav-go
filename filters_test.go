@@ -1,15 +1,14 @@
-package test
+package caldav
 
 import (
   "testing"
   "time"
   "strings"
   "caldav/data"
-  "caldav/server"
 )
 
 func TestParseFilter(t *testing.T) {
-  filter, err := server.ParseFilterFromXML(`<C:filter xmlns:C="urn:ietf:params:xml:ns:caldav"></C:filter>`)
+  filter, err := ParseFilterFromXML(`<C:filter xmlns:C="urn:ietf:params:xml:ns:caldav"></C:filter>`)
   if err != nil {
     t.Error("Parsing filter from a valid XML returned an error:", err)
   }
@@ -24,7 +23,7 @@ func TestParseFilter(t *testing.T) {
   }
 
   for _, invalidXML := range invalidXMLs {
-    filter, err = server.ParseFilterFromXML(invalidXML)
+    filter, err = ParseFilterFromXML(invalidXML)
     if err == nil {
       t.Error("Parsing filter from an invalid XML should return an error")
     }
@@ -342,14 +341,14 @@ func TestMatch14(t *testing.T) {
 }
 
 func assertFilterMatch(filterXML string, res FakeResource, t *testing.T) {
-  filter, err := server.ParseFilterFromXML(filterXML); checkerr(err)
+  filter, err := ParseFilterFromXML(filterXML); panicerr(err)
   if !filter.Match(&res) {
     t.Error("Filter should have been matched. Filter XML:", filterXML)
   }
 }
 
 func assertFilterDoesNotMatch(filterXML string, res FakeResource, t *testing.T) {
-  filter, err := server.ParseFilterFromXML(filterXML); checkerr(err)
+  filter, err := ParseFilterFromXML(filterXML); panicerr(err)
   if filter.Match(&res) {
     t.Error("Filter should not have been matched. Filter XML:", filterXML)
   }
@@ -458,10 +457,4 @@ func (r *FakeResource) parseTime(timeStr string) time.Time {
   timeParseFormat := "20060102T150405Z"
   t, _ := time.Parse(timeParseFormat, timeStr)
   return t
-}
-
-func checkerr(err error) {
-  if err != nil {
-    panic(err)
-  }
 }

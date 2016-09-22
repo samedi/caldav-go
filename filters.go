@@ -1,4 +1,4 @@
-package server
+package caldav
 
 import (
   "log"
@@ -37,7 +37,7 @@ type ResourceFilter struct {
 func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
   doc := etree.NewDocument()
   if err := doc.ReadFromString(xml); err != nil {
-    log.Printf("ERROR: Could not parse filter from XML.\n%s", xml)
+    log.Printf("ERROR: Could not parse filter from XML string. XML:\n%s", xml)
     return new(ResourceFilter), err
   }
 
@@ -46,7 +46,7 @@ func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
   // TODO: check for XML namespaces and restrict it to accept only CALDAV:filter tag.
   elem := doc.FindElement("//" + TAG_FILTER)
   if elem == nil {
-    log.Printf("WARNING: The filter XML should contain a <%s> element.\n%s", TAG_FILTER, xml)
+    log.Printf("WARNING: The filter XML should contain a <%s> element. XML:\n%s", TAG_FILTER, xml)
     return new(ResourceFilter), errors.New("invalid XML filter")
   }
 
@@ -224,8 +224,6 @@ func (f *ResourceFilter) propMatch(target data.ResourceInterface, scope []string
     // check each child of the current filter if they all match.
     return f.propChildrenMatch(target, propPath)
   }
-
-  return false
 }
 
 // checks if all the prop's child filters match the target resource

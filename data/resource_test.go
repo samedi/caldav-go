@@ -1,15 +1,13 @@
-package test
+package data
 
 import (
   "testing"
-
   "fmt"
   "time"
-  "caldav/data"
 )
 
 func TestNewResource(t *testing.T) {
-  res := data.NewResource("/foo///bar/123.ics//", FakeResourceAdapter{})
+  res := NewResource("/foo///bar/123.ics//", FakeResourceAdapter{})
 
   if res.Name != "123.ics" {
     t.Error("Expected name to be 123.ics, got", res.Name)
@@ -23,7 +21,7 @@ func TestNewResource(t *testing.T) {
 
 func TestIsCollection(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo/bar/", adp)
+  res := NewResource("/foo/bar/", adp)
 
   adp.collection = false
   if res.IsCollection() {
@@ -37,12 +35,12 @@ func TestIsCollection(t *testing.T) {
 }
 
 func TestIsPrincipal(t *testing.T) {
-  res := data.NewResource("/foo", FakeResourceAdapter{})
+  res := NewResource("/foo", FakeResourceAdapter{})
   if !res.IsPrincipal() {
     t.Error("Resource should be principal")
   }
 
-  res = data.NewResource("/foo/bar", FakeResourceAdapter{})
+  res = NewResource("/foo/bar", FakeResourceAdapter{})
   if res.IsPrincipal() {
     t.Error("Resource should not be principal")
   }
@@ -50,7 +48,7 @@ func TestIsPrincipal(t *testing.T) {
 
 func TestComponentName(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.collection = false
   if res.ComponentName() != "VEVENT" {
@@ -65,7 +63,7 @@ func TestComponentName(t *testing.T) {
 
 func TestEtag(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.collection = false
   adp.etag = "1111"
@@ -89,7 +87,7 @@ func TestEtag(t *testing.T) {
 
 func TestContentType(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.collection = false
   ctype, found := res.GetContentType()
@@ -105,7 +103,7 @@ func TestContentType(t *testing.T) {
 }
 
 func TestDisplayName(t *testing.T) {
-  res := data.NewResource("foo/bar", FakeResourceAdapter{})
+  res := NewResource("foo/bar", FakeResourceAdapter{})
 
   // it just returns the resource Name
   name, found := res.GetDisplayName()
@@ -116,7 +114,7 @@ func TestDisplayName(t *testing.T) {
 
 func TestContentData(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.contentData = "EVENT;"
 
@@ -135,7 +133,7 @@ func TestContentData(t *testing.T) {
 
 func TestContentLength(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("foo", adp)
+  res := NewResource("foo", adp)
 
   adp.contentSize = 42
 
@@ -154,7 +152,7 @@ func TestContentLength(t *testing.T) {
 
 func TestLastModified(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("foo", adp)
+  res := NewResource("foo", adp)
 
   adp.modtime = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
   timeFormat := "2006-01-02 15:04:05"
@@ -166,13 +164,13 @@ func TestLastModified(t *testing.T) {
 }
 
 func TestOwnerPath(t *testing.T) {
-  res := data.NewResource("/foo", FakeResourceAdapter{})
+  res := NewResource("/foo", FakeResourceAdapter{})
   owner, found := res.GetOwnerPath()
   if owner != "" || found {
     t.Error("Path owner should have been empty")
   }
 
-  res = data.NewResource("/foo/bar", FakeResourceAdapter{})
+  res = NewResource("/foo/bar", FakeResourceAdapter{})
   owner, found = res.GetOwnerPath()
   if owner != "/foo/" || !found {
     t.Error("Path owner should have been `/foo/`")
@@ -181,7 +179,7 @@ func TestOwnerPath(t *testing.T) {
 
 func TestCollectionChildPaths(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.collectionChildPaths = []string{"/foo/bar", "/foo/baz"}
 
@@ -199,7 +197,7 @@ func TestCollectionChildPaths(t *testing.T) {
 }
 
 func TestStartEndTimesUTC(t *testing.T) {
-  newResource := func(timeInfo string) data.Resource {
+  newResource := func(timeInfo string) Resource {
     adp := new(FakeResourceAdapter)
     adp.contentData = fmt.Sprintf(`
     BEGIN:VCALENDAR
@@ -226,7 +224,7 @@ func TestStartEndTimesUTC(t *testing.T) {
     END:VCALENDAR
     `, timeInfo)
 
-    return data.NewResource("/foo", adp)
+    return NewResource("/foo", adp)
   }
 
   assertTime := func(target, expected time.Time) {
@@ -281,7 +279,7 @@ func TestStartEndTimesUTC(t *testing.T) {
 
 func TestProperties(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.contentData = `
   BEGIN:VCALENDAR
@@ -319,7 +317,7 @@ func TestProperties(t *testing.T) {
 
 func TestPropertyParams(t *testing.T) {
   adp := new(FakeResourceAdapter)
-  res := data.NewResource("/foo", adp)
+  res := NewResource("/foo", adp)
 
   adp.contentData = `
   BEGIN:VCALENDAR

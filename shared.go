@@ -1,4 +1,4 @@
-package server
+package caldav
 
 import (
   "log"
@@ -84,4 +84,10 @@ func respond(status int, body string, writer http.ResponseWriter) {
 func respondWithError(err error, writer http.ResponseWriter) {
   log.Printf("\n*** Error: %s ***\n", err)
   respond(http.StatusInternalServerError, "", writer)
+}
+
+func panicerr(err error) {
+  if err != nil {
+    panic(err)
+  }
 }
