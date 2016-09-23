@@ -3,7 +3,7 @@ package caldav
 import (
   "net/http"
   "encoding/xml"
-  "caldav/data"
+  "git.samedi.cc/ferraz/caldav/data"
 )
 
 type PropfindHandler struct {

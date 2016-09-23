@@ -4,7 +4,7 @@ import (
   "testing"
   "time"
   "strings"
-  "caldav/data"
+  "git.samedi.cc/ferraz/caldav/data"
 )
 
 func TestParseFilter(t *testing.T) {

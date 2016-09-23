@@ -3,7 +3,7 @@ package data
 import (
   "os"
   "errors"
-  "caldav/files"
+  "git.samedi.cc/ferraz/caldav/files"
 )
 
 var (

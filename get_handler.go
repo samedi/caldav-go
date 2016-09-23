@@ -2,7 +2,7 @@ package caldav
 
 import (
   "net/http"
-  "caldav/data"
+  "git.samedi.cc/ferraz/caldav/data"
 )
 
 type GetHandler struct {

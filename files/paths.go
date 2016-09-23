@@ -3,7 +3,7 @@ package files
 import (
   "strings"
   "path/filepath"
-  "caldav/lib"
+  "git.samedi.cc/ferraz/caldav/lib"
 )
 
 const (

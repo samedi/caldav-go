@@ -7,8 +7,8 @@ import (
   "net/http"
   "github.com/yosssi/gohtml"
 
-  "caldav/lib"
-  "caldav/data"
+  "git.samedi.cc/ferraz/caldav/lib"
+  "git.samedi.cc/ferraz/caldav/data"
 )
 
 // Supported ICal components on this server.

@@ -4,9 +4,9 @@ import (
   "fmt"
   "net/http"
   "encoding/xml"
-  "caldav/lib"
-  "caldav/data"
-  "caldav/ixml"
+  "git.samedi.cc/ferraz/caldav/lib"
+  "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/ixml"
 )
 
 // Wraps a multistatus response. It contains the set of `Responses`

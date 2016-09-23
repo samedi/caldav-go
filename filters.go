@@ -7,8 +7,8 @@ import (
   "errors"
   "github.com/beevik/etree"
 
-  "caldav/lib"
-  "caldav/data"
+  "git.samedi.cc/ferraz/caldav/lib"
+  "git.samedi.cc/ferraz/caldav/data"
 )
 
 // ================ FILTERS ==================

@@ -9,9 +9,9 @@ import (
   "strconv"
   "io/ioutil"
 
-  "caldav/lib"
-  "caldav/ical"
-  "caldav/files"
+  "git.samedi.cc/ferraz/caldav/lib"
+  "git.samedi.cc/ferraz/caldav/ical"
+  "git.samedi.cc/ferraz/caldav/files"
 )
 
 type ResourceInterface interface {
