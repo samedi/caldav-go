@@ -12,14 +12,12 @@ import (
 )
 
 // Supported ICal components on this server.
-var SupportedComponents = []string{lib.VCALENDAR, lib.VEVENT}
+var supportedComponents = []string{lib.VCALENDAR, lib.VEVENT}
 
 const (
 	infiniteDepth = -1
 	invalidDepth  = -2
 )
-
-var storage data.FileStorage = data.FileStorage{}
 
 func getDepth(request *http.Request) int {
   d := "infinity"

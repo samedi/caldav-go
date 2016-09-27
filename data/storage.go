@@ -13,10 +13,10 @@ var (
 
 type Storage interface {
   GetResources(rpath string, depth int) ([]Resource, error)
-  GetResource(rpath string) (Resource, error)
+  GetResource(rpath string) (*Resource, bool, error)
   IsResourcePresent(rpath string) bool
-  CreateResource(content string) (Resource, error)
-  UpdateResource(rpath string, content string) (Resource, error)
+  CreateResource(rpath, content string) (*Resource, error)
+  UpdateResource(rpath, content string) (*Resource, error)
   DeleteResource(rpath string) error
 }
 
@@ -71,7 +71,7 @@ func (fs *FileStorage) IsResourcePresent(rpath string) bool {
   return found
 }
 
-func (fs *FileStorage) CreateResource(rpath string, content string) (*Resource, error) {
+func (fs *FileStorage) CreateResource(rpath, content string) (*Resource, error) {
   rAbsPath := files.AbsPath(rpath)
 
   if fs.IsResourcePresent(rAbsPath) {
@@ -95,7 +95,7 @@ func (fs *FileStorage) CreateResource(rpath string, content string) (*Resource, 
   return &res, nil
 }
 
-func (fs *FileStorage) UpdateResource(rpath string, content string) (*Resource, error) {
+func (fs *FileStorage) UpdateResource(rpath, content string) (*Resource, error) {
   f, e := fs.openResourceFile(rpath, os.O_RDWR)
   if e != nil {
 		return nil, e

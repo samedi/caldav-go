@@ -14,7 +14,7 @@ type PropfindHandler struct {
 
 func (ph PropfindHandler) Handle()  {
   // get the target resources based on the request URL
-  resources, err := storage.GetResources(ph.request.URL.Path, getDepth(ph.request))
+  resources, err := Storage.GetResources(ph.request.URL.Path, getDepth(ph.request))
   if err != nil {
     if err == data.ErrResourceNotFound {
       respond(http.StatusNotFound, "", ph.writer)

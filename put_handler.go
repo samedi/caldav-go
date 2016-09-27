@@ -17,7 +17,7 @@ func (ph PutHandler) Handle() {
 
   // check if resource exists
   resourcePath := ph.request.URL.Path
-  resource, found, err := storage.GetResource(resourcePath)
+  resource, found, err := Storage.GetResource(resourcePath)
   if err != nil && err != data.ErrResourceNotFound {
     respondWithError(err, ph.writer)
     return
@@ -28,7 +28,7 @@ func (ph PutHandler) Handle() {
   // 1. Item NOT FOUND and there is NO ETAG match header: CREATE a new item
   if !found && !precond.IfMatchPresent() {
     // create new event resource
-    resource, err = storage.CreateResource(resourcePath, ph.requestBody)
+    resource, err = Storage.CreateResource(resourcePath, ph.requestBody)
     if err != nil {
       respondWithError(err, ph.writer)
       return
@@ -48,7 +48,7 @@ func (ph PutHandler) Handle() {
     resourceEtag, _ := resource.GetEtag()
     if found && precond.IfMatch(resourceEtag) && !precond.IfNoneMatch("*") {
       // update resource
-      resource, err = storage.UpdateResource(resourcePath, ph.requestBody)
+      resource, err = Storage.UpdateResource(resourcePath, ph.requestBody)
       if err != nil {
         respondWithError(err, ph.writer)
         return

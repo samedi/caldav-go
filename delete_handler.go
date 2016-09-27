@@ -15,7 +15,7 @@ func (dh DeleteHandler) Handle() {
   precond := RequestPreconditions{dh.request}
 
   // get the event from the storage
-  resource, found, err := storage.GetResource(dh.request.URL.Path)
+  resource, found, err := Storage.GetResource(dh.request.URL.Path)
   if err != nil && err != data.ErrResourceNotFound {
     respondWithError(err, dh.writer)
     return
@@ -40,7 +40,7 @@ func (dh DeleteHandler) Handle() {
   }
 
   // delete event after pre-condition passed
-  err = storage.DeleteResource(resource.Path)
+  err = Storage.DeleteResource(resource.Path)
   if err != nil {
     respondWithError(err, dh.writer)
     return

@@ -17,7 +17,7 @@ type ReportHandler struct{
 
 // See more at RFC4791#section-7.1
 func (rh ReportHandler) Handle() {
-  urlResource, found, err := storage.GetResource(rh.request.URL.Path)
+  urlResource, found, err := Storage.GetResource(rh.request.URL.Path)
   if !found {
     respond(http.StatusNotFound, "", rh.writer)
     return
@@ -104,7 +104,7 @@ func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
   if origin.IsCollection() {
     collectionChildren, _ := origin.GetCollectionChildPaths()
     for _, path := range collectionChildren {
-      resource, found, err := storage.GetResource(path)
+      resource, found, err := Storage.GetResource(path)
       if err != nil && err != data.ErrResourceNotFound {
         return nil, err
       }
@@ -141,7 +141,7 @@ func (rh ReportHandler) fetchResourcesByList(origin *data.Resource, requestedPat
         continue
       }
 
-      resource, found, err := storage.GetResource(path)
+      resource, found, err := Storage.GetResource(path)
       if err != nil && err != data.ErrResourceNotFound {
         return nil, err
       }

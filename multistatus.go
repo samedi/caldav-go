@@ -98,7 +98,7 @@ func (ms *MultistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
       }
     case xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "supported-calendar-component-set"}:
       if resource.IsCollection() {
-        for _, component := range SupportedComponents {
+        for _, component := range supportedComponents {
           compTag := fmt.Sprintf(`<C:comp name="%s"/>`, component)
           pvalue.Contents = append(pvalue.Contents, compTag)
         }
