@@ -9,8 +9,9 @@ import (
   "strconv"
   "io/ioutil"
 
+  "github.com/dferrazm/ical-go/ical"
+
   "git.samedi.cc/ferraz/caldav/lib"
-  "git.samedi.cc/ferraz/caldav/ical"
   "git.samedi.cc/ferraz/caldav/files"
 )
 
