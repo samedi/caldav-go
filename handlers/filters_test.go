@@ -1,4 +1,4 @@
-package caldav
+package handlers
 
 import (
   "testing"
@@ -457,4 +457,10 @@ func (r *FakeResource) parseTime(timeStr string) time.Time {
   timeParseFormat := "20060102T150405Z"
   t, _ := time.Parse(timeParseFormat, timeStr)
   return t
+}
+
+func panicerr(err error) {
+  if err != nil {
+    panic(err)
+  }
 }

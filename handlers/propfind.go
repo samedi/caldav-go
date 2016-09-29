@@ -1,20 +1,21 @@
-package caldav
+package handlers
 
 import (
   "net/http"
   "encoding/xml"
   "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/global"
 )
 
-type PropfindHandler struct {
+type propfindHandler struct {
   request *http.Request
   requestBody string
   writer http.ResponseWriter
 }
 
-func (ph PropfindHandler) Handle()  {
+func (ph propfindHandler) Handle()  {
   // get the target resources based on the request URL
-  resources, err := Storage.GetResources(ph.request.URL.Path, getDepth(ph.request))
+  resources, err := global.Storage.GetResources(ph.request.URL.Path, getDepth(ph.request))
   if err != nil {
     if err == data.ErrResourceNotFound {
       respond(http.StatusNotFound, "", ph.writer)
@@ -35,7 +36,7 @@ func (ph PropfindHandler) Handle()  {
   var requestXML XMLRoot2
   xml.Unmarshal([]byte(ph.requestBody), &requestXML)
 
-  multistatus := NewMultistatusResp()
+  multistatus := newMultistatusResp()
   // for each href, build the multistatus responses
   for _, resource := range resources {
     propstats := multistatus.Propstats(&resource, requestXML.Prop.Tags)

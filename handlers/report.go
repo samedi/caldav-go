@@ -1,4 +1,4 @@
-package caldav
+package handlers
 
 import (
   "fmt"
@@ -7,17 +7,18 @@ import (
   "encoding/xml"
 
   "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/global"
 )
 
-type ReportHandler struct{
+type reportHandler struct{
   request *http.Request
   requestBody string
   writer http.ResponseWriter
 }
 
 // See more at RFC4791#section-7.1
-func (rh ReportHandler) Handle() {
-  urlResource, found, err := Storage.GetResource(rh.request.URL.Path)
+func (rh reportHandler) Handle() {
+  urlResource, found, err := global.Storage.GetResource(rh.request.URL.Path)
   if !found {
     respond(http.StatusNotFound, "", rh.writer)
     return
@@ -49,7 +50,7 @@ func (rh ReportHandler) Handle() {
     return
   }
 
-  multistatus := NewMultistatusResp()
+  multistatus := newMultistatusResp()
   // for each href, build the multistatus responses
   for _, r := range resourcesToReport {
     propstats := multistatus.Propstats(r.resource, requestXML.Prop.Tags)
@@ -95,7 +96,7 @@ type reportRes struct {
 // match the filter will not appear in the response result.
 // If the origin resource is not a collection, the function just returns it and ignore any filter processing.
 // [See RFC4791#section-7.8]
-func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXML reportFilterXML) ([]reportRes, error) {
+func (rh reportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXML reportFilterXML) ([]reportRes, error) {
   // The list of resources that has to be reported back in the response.
   reps := []reportRes{}
 
@@ -104,7 +105,7 @@ func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
   if origin.IsCollection() {
     collectionChildren, _ := origin.GetCollectionChildPaths()
     for _, path := range collectionChildren {
-      resource, found, err := Storage.GetResource(path)
+      resource, found, err := global.Storage.GetResource(path)
       if err != nil && err != data.ErrResourceNotFound {
         return nil, err
       }
@@ -129,7 +130,7 @@ func (rh ReportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
 // If the resource from the URL is NOT a collection (1) we process the the report only for this resource
 // and ignore any othre requested hrefs that might be present in the request body.
 // [See RFC4791#section-7.9]
-func (rh ReportHandler) fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]reportRes, error) {
+func (rh reportHandler) fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]reportRes, error) {
   reps := []reportRes{}
 
   // if origin resource is a collection, we have to check if each requested path belongs to it
@@ -141,7 +142,7 @@ func (rh ReportHandler) fetchResourcesByList(origin *data.Resource, requestedPat
         continue
       }
 
-      resource, found, err := Storage.GetResource(path)
+      resource, found, err := global.Storage.GetResource(path)
       if err != nil && err != data.ErrResourceNotFound {
         return nil, err
       }

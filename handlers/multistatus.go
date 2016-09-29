@@ -1,4 +1,4 @@
-package caldav
+package handlers
 
 import (
   "fmt"
@@ -12,12 +12,12 @@ import (
 // Wraps a multistatus response. It contains the set of `Responses`
 // that will serve to build the final XML. Multistatus responses are
 // used by the REPORT and PROPFIND methods.
-type MultistatusResp struct {
+type multistatusResp struct {
   Responses []msResponse
 }
 
-func NewMultistatusResp() MultistatusResp {
-  ms := MultistatusResp{}
+func newMultistatusResp() multistatusResp {
+  ms := multistatusResp{}
   ms.Responses = []msResponse{}
 
   return ms
@@ -44,7 +44,7 @@ type msPropValue struct {
 // The set of props (msPropValue) processed. Each prop is mapped to a HTTP status code.
 // So if a prop is found and processed ok, it'll be mapped to 200. If it's not found,
 // it'll be mapped to 404, and so on.
-func (ms *MultistatusResp) Propstats(resource *data.Resource, reqprops []xml.Name) map[int][]msPropValue {
+func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Name) map[int][]msPropValue {
   if resource == nil {
     return nil
   }
@@ -117,7 +117,7 @@ func (ms *MultistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 }
 
 // Adds a new `msResponse` to the `Responses` array.
-func (ms *MultistatusResp) AddResponse(href string, found bool, propstats map[int][]msPropValue) {
+func (ms *multistatusResp) AddResponse(href string, found bool, propstats map[int][]msPropValue) {
   ms.Responses = append(ms.Responses, msResponse{
     Href: href,
     Found: found,
@@ -125,7 +125,7 @@ func (ms *MultistatusResp) AddResponse(href string, found bool, propstats map[in
   })
 }
 
-func (ms *MultistatusResp) ToXML() string {
+func (ms *multistatusResp) ToXML() string {
   // init multistatus
   var bf lib.StringBuffer
   bf.Write(`<?xml version="1.0" encoding="UTF-8"?>`)
@@ -158,7 +158,7 @@ func (ms *MultistatusResp) ToXML() string {
   return bf.String()
 }
 
-func (ms *MultistatusResp) propToXML(pv msPropValue) string {
+func (ms *multistatusResp) propToXML(pv msPropValue) string {
   for _, content := range pv.Contents {
     pv.Content += content
   }
