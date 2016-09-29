@@ -508,3 +508,9 @@ func logFailedLine() {
   pc, fn, line, _ := runtime.Caller(2)
   fmt.Printf("\n\n** Failed in %s[%s:%d] **\n\n", runtime.FuncForPC(pc).Name(), fn, line)
 }
+
+func panicerr(err error) {
+  if err != nil {
+    panic(err)
+  }
+}

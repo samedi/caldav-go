@@ -1,19 +1,19 @@
-package caldav
+package handlers
 
 import (
   "net/http"
   "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/global"
 )
 
-type GetHandler struct {
+type getHandler struct {
   request *http.Request
-  requestBody string
   writer http.ResponseWriter
   onlyHeaders bool
 }
 
-func (gh GetHandler) Handle() {
-  resource, found, err := Storage.GetResource(gh.request.URL.Path)
+func (gh getHandler) Handle() {
+  resource, found, err := global.Storage.GetResource(gh.request.URL.Path)
   if err != nil && err != data.ErrResourceNotFound {
     respondWithError(err, gh.writer)
     return

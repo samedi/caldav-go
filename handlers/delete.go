@@ -1,21 +1,21 @@
-package caldav
+package handlers
 
 import (
   "net/http"
   "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/global"
 )
 
-type DeleteHandler struct {
+type deleteHandler struct {
   request *http.Request
-  requestBody string
   writer http.ResponseWriter
 }
 
-func (dh DeleteHandler) Handle() {
-  precond := RequestPreconditions{dh.request}
+func (dh deleteHandler) Handle() {
+  precond := requestPreconditions{dh.request}
 
   // get the event from the storage
-  resource, found, err := Storage.GetResource(dh.request.URL.Path)
+  resource, found, err := global.Storage.GetResource(dh.request.URL.Path)
   if err != nil && err != data.ErrResourceNotFound {
     respondWithError(err, dh.writer)
     return
@@ -40,7 +40,7 @@ func (dh DeleteHandler) Handle() {
   }
 
   // delete event after pre-condition passed
-  err = Storage.DeleteResource(resource.Path)
+  err = global.Storage.DeleteResource(resource.Path)
   if err != nil {
     respondWithError(err, dh.writer)
     return

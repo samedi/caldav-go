@@ -1,18 +1,16 @@
-package caldav
+package handlers
 
 import (
   "net/http"
 )
 
-type OptionsHandler struct {
-  request *http.Request
-  requestBody string
+type optionsHandler struct {
   writer http.ResponseWriter
 }
 
 // Returns the allowed methods and the DAV features implemented by the current server.
 // For more information about the values and format read RFC4918 Sections 10.1 and 18.
-func (oh OptionsHandler) Handle() {
+func (oh optionsHandler) Handle() {
   oh.writer.Header().Set("Allow", "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT")
   // Set the DAV compliance header:
   // 1: Server supports all the requirements specified in RFC2518
