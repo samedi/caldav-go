@@ -3,6 +3,7 @@ package caldav
 import (
   "fmt"
   "os"
+  "time"
   "runtime"
   "testing"
   "strings"
@@ -15,7 +16,9 @@ import (
 
 func TestMain(m *testing.M) {
   go startServer()
-	os.Exit(m.Run())
+  // wait for the server to be started
+  time.Sleep(time.Second/3)
+  os.Exit(m.Run())
 }
 
 const (
@@ -213,7 +216,7 @@ func TestPROPFIND(t *testing.T) {
   resp = doRequest("PROPFIND", rpath, propfindXML, nil)
   respBody := readResponseBody(resp)
   assertInt(resp.StatusCode, 207, t)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 
   // Next tests will check the Depth feature
 
@@ -248,7 +251,7 @@ func TestPROPFIND(t *testing.T) {
 
   resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 
   // test PROPFIND with depth 1
   headers["Depth"] = "1"
@@ -279,12 +282,12 @@ func TestPROPFIND(t *testing.T) {
 
   resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 
   // the same test as before but without the trailing '/' on the collection's path
   resp = doRequest("PROPFIND", "/test-data/propfind", propfindXML, headers)
   respBody = readResponseBody(resp)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 }
 
 func TestREPORT(t *testing.T) {
@@ -330,7 +333,7 @@ func TestREPORT(t *testing.T) {
 
   resp := doRequest("REPORT", path, reportXML, nil)
   respBody := readResponseBody(resp)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 
   // Test 2: when the URL path points to an actual resource and using the same body as before
   path = collection + rName
@@ -354,7 +357,7 @@ func TestREPORT(t *testing.T) {
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 
   // Test 3: when the URL points to a collection and passing filter rules in the body
   path = collection
@@ -397,7 +400,7 @@ func TestREPORT(t *testing.T) {
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
-  assertStr(multistatusXML(respBody), multistatusXML(expectedRespBody), t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
 }
 
 // ================ FUNCS ========================
@@ -441,21 +444,28 @@ func createResource(collection, rName, data string) {
   f.WriteString(data)
 }
 
-func multistatusXML(xml string) string {
-  cleanupMap := map[string]string{
-    `\r?\n`: "",
-    `>[\s|\t]+<`: "><",
-    `<D:getetag>.+</D:getetag>`: `<D:getetag>?</D:getetag>`,
-    `<CS:getctag>.+</CS:getctag>`: `<CS:getctag>?</CS:getctag>`,
-    `<D:getlastmodified>.+</D:getlastmodified>`: `<D:getlastmodified>?</D:getlastmodified>`,
+func assertMultistatusXML(target, expectation string, t *testing.T) {
+  cleanXML := func(xml string) string {
+    cleanupMap := map[string]string{
+      `\r?\n`: "",
+      `>[\s|\t]+<`: "><",
+      `<D:getetag>.+</D:getetag>`: `<D:getetag>?</D:getetag>`,
+      `<CS:getctag>.+</CS:getctag>`: `<CS:getctag>?</CS:getctag>`,
+      `<D:getlastmodified>.+</D:getlastmodified>`: `<D:getlastmodified>?</D:getlastmodified>`,
+    }
+
+    for k, v := range cleanupMap {
+      re := regexp.MustCompile(k)
+      xml = re.ReplaceAllString(xml, v)
+    }
+
+    return strings.TrimSpace(xml)
   }
 
-  for k, v := range cleanupMap {
-    re := regexp.MustCompile(k)
-    xml = re.ReplaceAllString(xml, v)
-  }
+  target = cleanXML(target)
+  expectation = cleanXML(expectation)
 
-  return strings.TrimSpace(xml)
+  assertStr(target, expectation, t)
 }
 
 // ================= ASSERTIONS ============================

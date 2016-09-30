@@ -1,0 +1,13 @@
+image: golang:1.6
+stages:
+- test
+variables:
+before_script:
+  - git config --global url."git@git.samedi.cc:".insteadOf "https://git.samedi.cc/"
+  - mkdir -p $GOPATH/src/git.samedi.cc/ferraz
+  - ln -s `pwd` $GOPATH/src/git.samedi.cc/ferraz/caldav
+  - cd $GOPATH/src/git.samedi.cc/ferraz/caldav
+test:
+  stage: test
+  script:
+    - ./test.sh
