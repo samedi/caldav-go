@@ -1,0 +1,15 @@
+{
+	"ImportPath": "git.samedi.cc/ferraz/caldav",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/beevik/etree",
+			"Rev": "ce53c4ce608a92897d74ff8fd47b5a1131e5606c"
+		},
+		{
+			"ImportPath": "github.com/dferrazm/ical-go/ical",
+			"Rev": "e079cdbf5fb929074fafe78415ed3f4208e6241e"
+		}
+	]
+}
