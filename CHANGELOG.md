@@ -2,7 +2,7 @@
 
 v0.1.0
 -----------
-2016-09-23 Daniel Ferraz <d.ferrazm@gmail.com>
+2016-09-23  Daniel Ferraz  <d.ferrazm@gmail.com>
 
 This version implements:
 

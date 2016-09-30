@@ -1,6 +1,6 @@
 # go CalDAV
 
-This is a Go lib that aims to implement the CalDAV specification ([RFC4791]). It allows the quick implementation of an CalDAV server in Go. Basically, it provides the request handlers that will handle the several CalDAV HTTP requests, fetch the appropriate resources, build the response and return it.
+This is a Go lib that aims to implement the CalDAV specification ([RFC4791]). It allows the quick implementation of a CalDAV server in Go. Basically, it provides the request handlers that will handle the several CalDAV HTTP requests, fetch the appropriate resources, build and return the responses.
 
 ### How to install
 
@@ -22,7 +22,7 @@ import (
 
 func runServer() {
   http.HandleFunc(PATH, caldav.RequestHandler)
-	http.ListenAndServe(PORT, nil)
+  http.ListenAndServe(PORT, nil)
 }
 ```
 
