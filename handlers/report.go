@@ -6,6 +6,7 @@ import (
   "net/http"
   "encoding/xml"
 
+  "git.samedi.cc/ferraz/caldav/errs"
   "git.samedi.cc/ferraz/caldav/data"
   "git.samedi.cc/ferraz/caldav/global"
 )
@@ -13,18 +14,16 @@ import (
 type reportHandler struct{
   request *http.Request
   requestBody string
-  writer http.ResponseWriter
+  response *Response
 }
 
 // See more at RFC4791#section-7.1
-func (rh reportHandler) Handle() {
+func (rh reportHandler) Handle() *Response {
   urlResource, found, err := global.Storage.GetResource(rh.request.URL.Path)
   if !found {
-    respond(http.StatusNotFound, "", rh.writer)
-    return
+    return rh.response.Set(http.StatusNotFound, "")
   } else if err != nil {
-    respondWithError(err, rh.writer)
-    return
+    return rh.response.SetError(err)
   }
 
   // read body string to xml struct
@@ -41,13 +40,11 @@ func (rh reportHandler) Handle() {
   case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-query"}:
     resourcesToReport, err = rh.fetchResourcesByFilters(urlResource, requestXML.Filters)
   default:
-    respond(http.StatusPreconditionFailed, "", rh.writer)
-    return
+    return rh.response.Set(http.StatusPreconditionFailed, "")
   }
 
   if err != nil {
-    respondWithError(err, rh.writer)
-    return
+    return rh.response.SetError(err)
   }
 
   multistatus := newMultistatusResp()
@@ -57,7 +54,7 @@ func (rh reportHandler) Handle() {
     multistatus.AddResponse(r.href, r.found, propstats)
   }
 
-  respond(207, multistatus.ToXML(), rh.writer)
+  return rh.response.Set(207, multistatus.ToXML())
 }
 
 type reportPropXML struct {
@@ -106,7 +103,7 @@ func (rh reportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
     collectionChildren, _ := origin.GetCollectionChildPaths()
     for _, path := range collectionChildren {
       resource, found, err := global.Storage.GetResource(path)
-      if err != nil && err != data.ErrResourceNotFound {
+      if err != nil && err != errs.ResourceNotFoundError {
         return nil, err
       }
 
@@ -143,7 +140,7 @@ func (rh reportHandler) fetchResourcesByList(origin *data.Resource, requestedPat
       }
 
       resource, found, err := global.Storage.GetResource(path)
-      if err != nil && err != data.ErrResourceNotFound {
+      if err != nil && err != errs.ResourceNotFoundError {
         return nil, err
       }
 

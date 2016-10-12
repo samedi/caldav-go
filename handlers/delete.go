@@ -2,49 +2,39 @@ package handlers
 
 import (
   "net/http"
-  "git.samedi.cc/ferraz/caldav/data"
   "git.samedi.cc/ferraz/caldav/global"
 )
 
 type deleteHandler struct {
   request *http.Request
-  writer http.ResponseWriter
+  response *Response
 }
 
-func (dh deleteHandler) Handle() {
+func (dh deleteHandler) Handle() *Response {
   precond := requestPreconditions{dh.request}
 
   // get the event from the storage
-  resource, found, err := global.Storage.GetResource(dh.request.URL.Path)
-  if err != nil && err != data.ErrResourceNotFound {
-    respondWithError(err, dh.writer)
-    return
-  }
-
-  if !found {
-    respond(http.StatusNotFound, "", dh.writer)
-    return
+  resource, _, err := global.Storage.GetResource(dh.request.URL.Path)
+  if err != nil {
+    return dh.response.SetError(err)
   }
 
   // TODO: Handle delete on collections
   if resource.IsCollection() {
-    respond(http.StatusMethodNotAllowed, "", dh.writer)
-    return
+    return dh.response.Set(http.StatusMethodNotAllowed, "")
   }
 
   // check ETag pre-condition
   resourceEtag, _ := resource.GetEtag()
   if !precond.IfMatch(resourceEtag) {
-    respond(http.StatusPreconditionFailed, "", dh.writer)
-    return
+    return dh.response.Set(http.StatusPreconditionFailed, "")
   }
 
   // delete event after pre-condition passed
   err = global.Storage.DeleteResource(resource.Path)
   if err != nil {
-    respondWithError(err, dh.writer)
-    return
+    return dh.response.SetError(err)
   }
 
-  respond(http.StatusNoContent, "", dh.writer)
+  return dh.response.Set(http.StatusNoContent, "")
 }

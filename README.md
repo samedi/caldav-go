@@ -28,6 +28,28 @@ func runServer() {
 
 With that, all the HTTP requests (GET, PUT, REPORT, PROPFIND, etc) will be handled and responded by the `caldav` handler. In case of any HTTP methods not supported by the lib, a `501 Not Implemented` response will be returned.
 
+In case you want more flexibility to handle the requests, e.g., if you wanted to access the generated response before being sent back to the caller, you could do like:
+
+```go
+package mycaldav
+
+import (
+  "net/http"
+  "git.samedi.cc/ferraz/caldav"
+)
+
+func runServer() {
+  http.HandleFunc(PATH, myHandler)
+  http.ListenAndServe(PORT, nil)
+}
+
+func myHandler(writer http.ResponseWriter, request *http.Request) {
+  response := caldav.HandleRequest(writer, request)
+  // ... do something with the `response` ...
+  response.Write(writer) // the response is written in the current `ResponseWriter` and ready to be sent back
+}
+```
+
 ### Features
 
 Please check the **CHANGELOG** to see specific features that are currently implemented.

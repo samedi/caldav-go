@@ -54,7 +54,7 @@ func NewResource(resPath string, adp ResourceAdapter) Resource {
   pClean  := lib.ToSlashPath(resPath)
   pSplit  := strings.Split(strings.Trim(pClean, "/"), "/")
 
-  return Resource{
+  return Resource {
     Name: pSplit[len(pSplit) - 1],
     Path: pClean,
     pathSplit: pSplit,

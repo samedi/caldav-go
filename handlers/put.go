@@ -2,26 +2,25 @@ package handlers
 
 import (
   "net/http"
-  "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/errs"
   "git.samedi.cc/ferraz/caldav/global"
 )
 
 type putHandler struct {
   request *http.Request
   requestBody string
-  writer http.ResponseWriter
+  response *Response
 }
 
-func (ph putHandler) Handle() {
+func (ph putHandler) Handle() *Response {
   precond := requestPreconditions{ph.request}
   success := false
 
   // check if resource exists
   resourcePath := ph.request.URL.Path
   resource, found, err := global.Storage.GetResource(resourcePath)
-  if err != nil && err != data.ErrResourceNotFound {
-    respondWithError(err, ph.writer)
-    return
+  if err != nil && err != errs.ResourceNotFoundError {
+    return ph.response.SetError(err)
   }
 
   // PUT is allowed in 2 cases:
@@ -31,8 +30,7 @@ func (ph putHandler) Handle() {
     // create new event resource
     resource, err = global.Storage.CreateResource(resourcePath, ph.requestBody)
     if err != nil {
-      respondWithError(err, ph.writer)
-      return
+      return ph.response.SetError(err)
     }
 
     success = true
@@ -41,8 +39,7 @@ func (ph putHandler) Handle() {
   if found {
     // TODO: Handle PUT on collections
     if resource.IsCollection() {
-      respond(http.StatusPreconditionFailed, "", ph.writer)
-      return
+      return ph.response.Set(http.StatusPreconditionFailed, "")
     }
 
     // 2. Item exists, the resource etag is verified and there's no IF-NONE-MATCH=* header: UPDATE the item
@@ -51,8 +48,7 @@ func (ph putHandler) Handle() {
       // update resource
       resource, err = global.Storage.UpdateResource(resourcePath, ph.requestBody)
       if err != nil {
-        respondWithError(err, ph.writer)
-        return
+        return ph.response.SetError(err)
       }
 
       success = true
@@ -61,10 +57,9 @@ func (ph putHandler) Handle() {
 
   if success {
     resourceEtag, _ := resource.GetEtag()
-    ph.writer.Header().Set("ETag", resourceEtag)
-    respond(http.StatusCreated, "", ph.writer)
-    return
+    ph.response.SetHeader("ETag", resourceEtag)
+    return ph.response.Set(http.StatusCreated, "")
   }
 
-  respond(http.StatusPreconditionFailed, "", ph.writer)
+  return ph.response.Set(http.StatusPreconditionFailed, "")
 }

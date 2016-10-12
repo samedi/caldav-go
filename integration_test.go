@@ -33,10 +33,14 @@ func startServer() {
 func TestOPTIONS(t *testing.T) {
   resp := doRequest("OPTIONS", "/test-data/", "", nil)
 
-  assertInt(len(resp.Header["Allow"]), 1, t)
-  assertInt(len(resp.Header["Dav"]), 1, t)
-  assertStr(resp.Header["Allow"][0], "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT", t)
-  assertStr(resp.Header["Dav"][0], "1, 3, calendar-access", t)
+  if assertInt(len(resp.Header["Allow"]), 1, t) {
+    assertStr(resp.Header["Allow"][0], "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT", t)
+  }
+
+  if assertInt(len(resp.Header["Dav"]), 1, t) {
+    assertStr(resp.Header["Dav"][0], "1, 3, calendar-access", t)
+  }
+
   assertInt(resp.StatusCode, http.StatusOK, t)
 }
 
@@ -73,7 +77,9 @@ func TestPUT(t *testing.T) {
   resourceData := "BEGIN:VEVENT; SUMMARY:Lunch; END:VEVENT"
   resp = doRequest("PUT", rpath, resourceData, nil)
   assertInt(resp.StatusCode, http.StatusCreated, t)
-  assertInt(len(resp.Header["Etag"]), 1, t)
+  if !assertInt(len(resp.Header["Etag"]), 1, t) {
+    return
+  }
   etag := resp.Header["Etag"][0]
   assertResourceExists(rpath, t)
   assertResourceData(rpath, resourceData, t)
@@ -472,23 +478,23 @@ func assertMultistatusXML(target, expectation string, t *testing.T) {
 
 func assertStr(target string, expectation string, t *testing.T) {
   if target != expectation {
-    logFailedLine()
-    t.Error("Expected:", expectation, "| Got:", target)
+    t.Error("Expected:", expectation, "| Got:", target, "\n ->", logFailedLine())
   }
 }
 
-func assertInt(target int, expectation int, t *testing.T) {
+func assertInt(target int, expectation int, t *testing.T) bool {
   if target != expectation {
-    logFailedLine()
-    t.Error("Expected:", expectation, "| Got:", target)
+    t.Error("Expected:", expectation, "| Got:", target, "\n ->", logFailedLine())
+    return false
   }
+
+  return true
 }
 
 func assertResourceDoesNotExist(rpath string, t *testing.T) {
   pwd, _ := os.Getwd()
   if _, err := os.Stat(pwd + rpath); !os.IsNotExist(err) {
-    logFailedLine()
-    t.Error("Resource", rpath, "exists")
+    t.Error("Resource", rpath, "exists", "\n ->", logFailedLine())
   }
 }
 
@@ -496,8 +502,7 @@ func assertResourceExists(rpath string, t *testing.T) {
   pwd, _ := os.Getwd()
   _, err := os.Stat(pwd + rpath)
   if os.IsNotExist(err) {
-    logFailedLine()
-    t.Error("Resource", rpath, "does not exist")
+    t.Error("Resource", rpath, "does not exist", "\n ->", logFailedLine())
   } else {
     panicerr(err)
   }
@@ -509,14 +514,13 @@ func assertResourceData(rpath, expectation string, t *testing.T) {
   dataStr := string(data)
   panicerr(err)
   if dataStr != expectation {
-    logFailedLine()
-    t.Error("Expected:", expectation, "| Got:", dataStr)
+    t.Error("Expected:", expectation, "| Got:", dataStr, "\n ->", logFailedLine())
   }
 }
 
-func logFailedLine() {
+func logFailedLine() string {
   pc, fn, line, _ := runtime.Caller(2)
-  fmt.Printf("\n\n** Failed in %s[%s:%d] **\n\n", runtime.FuncForPC(pc).Name(), fn, line)
+  return fmt.Sprintf("Failed in %s[%s:%d]", runtime.FuncForPC(pc).Name(), fn, line)
 }
 
 func panicerr(err error) {

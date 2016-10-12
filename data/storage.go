@@ -2,13 +2,8 @@ package data
 
 import (
   "os"
-  "errors"
+  "git.samedi.cc/ferraz/caldav/errs"
   "git.samedi.cc/ferraz/caldav/files"
-)
-
-var (
-  ErrResourceNotFound = errors.New("caldav: resource not found")
-  ErrResourceAlreadyCreated = errors.New("caldav: resource already exists")
 )
 
 type Storage interface {
@@ -58,7 +53,7 @@ func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
   }
 
   if resources == nil || len(resources) == 0 {
-    return nil, false, ErrResourceNotFound
+    return nil, false, errs.ResourceNotFoundError
   }
 
   res := resources[0]
@@ -75,7 +70,7 @@ func (fs *FileStorage) CreateResource(rpath, content string) (*Resource, error) 
   rAbsPath := files.AbsPath(rpath)
 
   if fs.IsResourcePresent(rAbsPath) {
-    return nil, ErrResourceAlreadyCreated
+    return nil, errs.ResourceAlreadyExistsError
   }
 
   // create parent directories (if needed)
@@ -120,7 +115,7 @@ func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, er
   f, e := os.OpenFile(files.AbsPath(filepath), mode, 0666)
   if e != nil {
     if os.IsNotExist(e) {
-			return nil, ErrResourceNotFound
+			return nil, errs.ResourceNotFoundError
 		}
 		return nil, e
   }

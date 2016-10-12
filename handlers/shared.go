@@ -1,8 +1,6 @@
 package handlers
 
 import (
-  "log"
-	"io"
   "net/http"
   "git.samedi.cc/ferraz/caldav/lib"
   "git.samedi.cc/ferraz/caldav/data"
@@ -10,16 +8,6 @@ import (
 
 // Supported ICal components on this server.
 var supportedComponents = []string{lib.VCALENDAR, lib.VEVENT}
-
-func respond(status int, body string, writer http.ResponseWriter) {
-  writer.WriteHeader(status)
-  io.WriteString(writer, body)
-}
-
-func respondWithError(err error, writer http.ResponseWriter) {
-  log.Printf("\n*** Error: %s ***\n", err)
-  respond(http.StatusInternalServerError, "", writer)
-}
 
 // TODO: implement after integrate authentication
 func getCurrentUser() *data.CalUser {

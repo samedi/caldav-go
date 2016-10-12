@@ -5,9 +5,9 @@ import (
 )
 
 type notImplementedHandler struct {
-  writer http.ResponseWriter
+  response *Response
 }
 
-func (h notImplementedHandler) Handle() {
-  respond(http.StatusNotImplemented, "", h.writer)
+func (h notImplementedHandler) Handle() *Response {
+  return h.response.Set(http.StatusNotImplemented, "")
 }
