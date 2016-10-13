@@ -2,13 +2,17 @@ package data
 
 import (
   "os"
+  "log"
+  "io/ioutil"
   "git.samedi.cc/ferraz/caldav/errs"
   "git.samedi.cc/ferraz/caldav/files"
 )
 
+// The storage is the responsible for the CRUD operations on the caldav resources.
 type Storage interface {
   GetResources(rpath string, depth int) ([]Resource, error)
   GetResource(rpath string) (*Resource, bool, error)
+  GetResourcesByFilters(collection *Resource, filters *ResourceFilter) ([]Resource, error)
   IsResourcePresent(rpath string) bool
   CreateResource(rpath, content string) (*Resource, error)
   UpdateResource(rpath, content string) (*Resource, error)
@@ -58,6 +62,32 @@ func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
 
   res := resources[0]
   return &res, true, nil
+}
+
+func (fs *FileStorage) GetResourcesByFilters(collection *Resource, filters *ResourceFilter) ([]Resource, error) {
+  result := []Resource{}
+
+  if collection == nil || filters == nil {
+    return result, nil
+  }
+
+  collectionChildPaths := fs.getCollectionChildPaths(collection)
+  for _, path := range collectionChildPaths {
+    resource, _, err := fs.GetResource(path)
+
+    if err != nil {
+      // if we can't find this resource, something weird went wrong, but not that serious, so we log it and continue
+      log.Printf("WARNING: returned error when trying to get resource with path %s from collection with path %s. Error: %s", path, collection.Path, err)
+      continue
+    }
+
+    // only add it if the resource matches the filters
+    if filters.Match(resource) {
+      result = append(result, *resource)
+    }
+  }
+
+  return result, nil
 }
 
 func (fs *FileStorage) IsResourcePresent(rpath string) bool {
@@ -121,4 +151,24 @@ func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, er
   }
 
   return f, nil
+}
+
+func (fs *FileStorage) getCollectionChildPaths(collection *Resource) []string {
+  if collection == nil || !collection.IsCollection() {
+    return nil
+  }
+
+  content, err := ioutil.ReadDir(files.AbsPath(collection.Path))
+	if err != nil {
+    log.Printf("ERROR: Could not read resource collection as file directory.\nError: %s.\nResource path: %s.", err, collection.Path)
+    return nil
+	}
+
+  result := []string{}
+	for _, file := range content {
+    fpath := files.JoinPaths(collection.Path, file.Name())
+    result = append(result, fpath)
+	}
+
+  return result
 }

@@ -1,14 +1,13 @@
-package handlers
+package data
 
 import (
   "testing"
   "time"
   "strings"
-  "git.samedi.cc/ferraz/caldav/data"
 )
 
 func TestParseFilter(t *testing.T) {
-  filter, err := ParseFilterFromXML(`<C:filter xmlns:C="urn:ietf:params:xml:ns:caldav"></C:filter>`)
+  filter, err := ParseResourceFilters(`<C:filter xmlns:C="urn:ietf:params:xml:ns:caldav"></C:filter>`)
   if err != nil {
     t.Error("Parsing filter from a valid XML returned an error:", err)
   }
@@ -23,7 +22,7 @@ func TestParseFilter(t *testing.T) {
   }
 
   for _, invalidXML := range invalidXMLs {
-    filter, err = ParseFilterFromXML(invalidXML)
+    filter, err = ParseResourceFilters(invalidXML)
     if err == nil {
       t.Error("Parsing filter from an invalid XML should return an error")
     }
@@ -341,14 +340,14 @@ func TestMatch14(t *testing.T) {
 }
 
 func assertFilterMatch(filterXML string, res FakeResource, t *testing.T) {
-  filter, err := ParseFilterFromXML(filterXML); panicerr(err)
+  filter, err := ParseResourceFilters(filterXML); panicerr(err)
   if !filter.Match(&res) {
     t.Error("Filter should have been matched. Filter XML:", filterXML)
   }
 }
 
 func assertFilterDoesNotMatch(filterXML string, res FakeResource, t *testing.T) {
-  filter, err := ParseFilterFromXML(filterXML); panicerr(err)
+  filter, err := ParseResourceFilters(filterXML); panicerr(err)
   if filter.Match(&res) {
     t.Error("Filter should not have been matched. Filter XML:", filterXML)
   }
@@ -359,7 +358,7 @@ type FakeResource struct {
   comp  string
   start string
   end   string
-  recurrences     []data.ResourceRecurrence
+  recurrences     []ResourceRecurrence
   properties      map[string]string
   propertyParams  map[string]string
 }
@@ -380,16 +379,16 @@ func (r *FakeResource) EndTimeUTC() time.Time {
   return r.parseTime(r.end)
 }
 
-func (r *FakeResource) Recurrences() []data.ResourceRecurrence {
+func (r *FakeResource) Recurrences() []ResourceRecurrence {
   return r.recurrences
 }
 
 func (r *FakeResource) addRecurrence(startStr string, endStr string) {
   if r.recurrences == nil {
-    r.recurrences = []data.ResourceRecurrence{}
+    r.recurrences = []ResourceRecurrence{}
   }
 
-  r.recurrences = append(r.recurrences, data.ResourceRecurrence{
+  r.recurrences = append(r.recurrences, ResourceRecurrence{
     StartTime: r.parseTime(startStr),
     EndTime:   r.parseTime(endStr),
   })

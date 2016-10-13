@@ -31,7 +31,6 @@ type ResourceAdapter interface {
   CalculateEtag() string
   GetContent() string
   GetContentSize() int64
-  GetCollectionChildPaths() []string
   GetModTime() time.Time
 }
 
@@ -198,20 +197,6 @@ func (r *Resource) GetOwnerPath() (string, bool) {
   }
 }
 
-func (r *Resource) GetCollectionChildPaths() ([]string, bool) {
-  if !r.IsCollection() {
-    return nil, false
-  }
-
-  paths := r.adapter.GetCollectionChildPaths()
-
-  if paths == nil {
-    return nil, false
-  }
-
-  return paths, true
-}
-
 // TODO: mnemonic
 func (r *Resource) icalVEVENT() *ical.Node {
   vevent := r.icalendar().ChildByName(ical.VEVENT)
@@ -287,20 +272,4 @@ func (adp *FileResourceAdapter) CalculateEtag() string {
 
 func (adp *FileResourceAdapter) GetModTime() time.Time {
   return adp.finfo.ModTime()
-}
-
-func (adp *FileResourceAdapter) GetCollectionChildPaths() []string {
-  content, err := ioutil.ReadDir(files.AbsPath(adp.resourcePath))
-	if err != nil {
-    log.Printf("ERROR: Could not read resource collection as file directory.\nError: %s.\nResource path: %s.", err, adp.resourcePath)
-    return nil
-	}
-
-  result := []string{}
-	for _, file := range content {
-    fpath := files.JoinPaths(adp.resourcePath, file.Name())
-    result = append(result, fpath)
-	}
-
-  return result
 }

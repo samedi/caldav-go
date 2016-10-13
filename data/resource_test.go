@@ -177,25 +177,6 @@ func TestOwnerPath(t *testing.T) {
   }
 }
 
-func TestCollectionChildPaths(t *testing.T) {
-  adp := new(FakeResourceAdapter)
-  res := NewResource("/foo", adp)
-
-  adp.collectionChildPaths = []string{"/foo/bar", "/foo/baz"}
-
-  adp.collection = false
-  paths, found := res.GetCollectionChildPaths()
-  if paths != nil || found {
-    t.Error("Collection child paths should not exist for non-collection resources")
-  }
-
-  adp.collection = true
-  paths, found = res.GetCollectionChildPaths()
-  if len(paths) != 2 || paths[0] != "/foo/bar" || paths[1] != "/foo/baz" || !found {
-    t.Error("Collection child paths should be [/foo/bar /foo/baz] and it was", paths)
-  }
-}
-
 func TestStartEndTimesUTC(t *testing.T) {
   newResource := func(timeInfo string) Resource {
     adp := new(FakeResourceAdapter)
@@ -359,7 +340,6 @@ type FakeResourceAdapter struct {
   contentData string
   contentSize int64
   modtime time.Time
-  collectionChildPaths []string
 }
 
 func (adp FakeResourceAdapter) IsCollection() bool {
@@ -380,8 +360,4 @@ func (adp FakeResourceAdapter) CalculateEtag() string {
 
 func (adp FakeResourceAdapter) GetModTime() time.Time {
   return adp.modtime
-}
-
-func (adp FakeResourceAdapter) GetCollectionChildPaths() []string {
-  return adp.collectionChildPaths
 }

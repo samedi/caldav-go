@@ -1,4 +1,4 @@
-package handlers
+package data
 
 import (
   "log"
@@ -8,7 +8,6 @@ import (
   "github.com/beevik/etree"
 
   "git.samedi.cc/ferraz/caldav/lib"
-  "git.samedi.cc/ferraz/caldav/data"
 )
 
 // ================ FILTERS ==================
@@ -34,7 +33,7 @@ type ResourceFilter struct {
 }
 
 // This function creates a new filter object from a piece of XML string.
-func ParseFilterFromXML(xml string) (*ResourceFilter, error) {
+func ParseResourceFilters(xml string) (*ResourceFilter, error) {
   doc := etree.NewDocument()
   if err := doc.ReadFromString(xml); err != nil {
     log.Printf("ERROR: Could not parse filter from XML string. XML:\n%s", xml)
@@ -71,7 +70,7 @@ func newFilterFromEtreeElem(elem *etree.Element) ResourceFilter {
   return filter
 }
 
-func (f *ResourceFilter) Match(target data.ResourceInterface) bool {
+func (f *ResourceFilter) Match(target ResourceInterface) bool {
   if f.name == TAG_FILTER {
     return f.rootFilterMatch(target)
   }
@@ -79,7 +78,7 @@ func (f *ResourceFilter) Match(target data.ResourceInterface) bool {
   return false
 }
 
-func (f *ResourceFilter) rootFilterMatch(target data.ResourceInterface) bool {
+func (f *ResourceFilter) rootFilterMatch(target ResourceInterface) bool {
   if f.isEmpty() {
     return false
   }
@@ -88,7 +87,7 @@ func (f *ResourceFilter) rootFilterMatch(target data.ResourceInterface) bool {
 }
 
 // checks if all the root's child filters match the target resource
-func (f *ResourceFilter) rootChildrenMatch(target data.ResourceInterface) bool {
+func (f *ResourceFilter) rootChildrenMatch(target ResourceInterface) bool {
   scope := []string{}
 
   for _, child := range f.getChildren() {
@@ -102,7 +101,7 @@ func (f *ResourceFilter) rootChildrenMatch(target data.ResourceInterface) bool {
 }
 
 // See RFC4791-9.7.1.
-func (f *ResourceFilter) compMatch(target data.ResourceInterface, scope []string) bool {
+func (f *ResourceFilter) compMatch(target ResourceInterface, scope []string) bool {
   targetComp := target.ComponentName()
   compName   := f.attrs["name"]
 
@@ -120,7 +119,7 @@ func (f *ResourceFilter) compMatch(target data.ResourceInterface, scope []string
 }
 
 // checks if all the comp's child filters match the target resource
-func (f *ResourceFilter) compChildrenMatch(target data.ResourceInterface, scope []string) bool {
+func (f *ResourceFilter) compChildrenMatch(target ResourceInterface, scope []string) bool {
   for _, child := range f.getChildren() {
     var match bool
 
@@ -145,7 +144,7 @@ func (f *ResourceFilter) compChildrenMatch(target data.ResourceInterface, scope 
 }
 
 // See RFC4791-9.9
-func (f *ResourceFilter) timeRangeMatch(target data.ResourceInterface) bool {
+func (f *ResourceFilter) timeRangeMatch(target ResourceInterface) bool {
   startAttr := f.attrs["start"]
   endAttr   := f.attrs["end"]
 
@@ -210,7 +209,7 @@ func (f *ResourceFilter) timeRangeMatch(target data.ResourceInterface) bool {
 }
 
 // See RFC4791-9.7.2.
-func (f *ResourceFilter) propMatch(target data.ResourceInterface, scope []string) bool {
+func (f *ResourceFilter) propMatch(target ResourceInterface, scope []string) bool {
   propName := f.attrs["name"]
   propPath := append(scope, propName)
 
@@ -227,7 +226,7 @@ func (f *ResourceFilter) propMatch(target data.ResourceInterface, scope []string
 }
 
 // checks if all the prop's child filters match the target resource
-func (f *ResourceFilter) propChildrenMatch(target data.ResourceInterface, propPath []string) bool {
+func (f *ResourceFilter) propChildrenMatch(target ResourceInterface, propPath []string) bool {
   for _, child := range f.getChildren() {
     var match bool
 
@@ -255,7 +254,7 @@ func (f *ResourceFilter) propChildrenMatch(target data.ResourceInterface, propPa
 }
 
 // See RFC4791-9.7.3
-func (f *ResourceFilter) paramMatch(target data.ResourceInterface, parentPropPath []string) bool {
+func (f *ResourceFilter) paramMatch(target ResourceInterface, parentPropPath []string) bool {
   paramName := f.attrs["name"]
   paramPath := append(parentPropPath, paramName)
 

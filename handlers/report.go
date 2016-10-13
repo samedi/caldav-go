@@ -97,20 +97,16 @@ func (rh reportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
   // The list of resources that has to be reported back in the response.
   reps := []reportRes{}
 
-  filter, _ := ParseFilterFromXML(filtersXML.toString())
-
   if origin.IsCollection() {
-    collectionChildren, _ := origin.GetCollectionChildPaths()
-    for _, path := range collectionChildren {
-      resource, found, err := global.Storage.GetResource(path)
-      if err != nil && err != errs.ResourceNotFoundError {
-        return nil, err
-      }
+    filters, _ := data.ParseResourceFilters(filtersXML.toString())
+    resources, err := global.Storage.GetResourcesByFilters(origin, filters)
 
-      // onlye add it if the resource was not found or if the resource match the filters
-      if !found || filter.Match(resource) {
-        reps = append(reps, reportRes{path, resource, found})
-      }
+    if err != nil {
+      return reps, err
+    }
+
+    for _, resource := range resources {
+      reps = append(reps, reportRes{resource.Path, &resource, true})
     }
   } else {
     // the origin resource is not a collection, so returns just that as the result
