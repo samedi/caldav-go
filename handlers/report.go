@@ -6,7 +6,6 @@ import (
   "net/http"
   "encoding/xml"
 
-  "git.samedi.cc/ferraz/caldav/errs"
   "git.samedi.cc/ferraz/caldav/data"
   "git.samedi.cc/ferraz/caldav/global"
 )
@@ -126,21 +125,30 @@ func (rh reportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
 func (rh reportHandler) fetchResourcesByList(origin *data.Resource, requestedPaths []string) ([]reportRes, error) {
   reps := []reportRes{}
 
-  // if origin resource is a collection, we have to check if each requested path belongs to it
   if origin.IsCollection() {
-    for _, path := range requestedPaths {
+    resources, err := global.Storage.GetResourcesByList(requestedPaths)
+
+    if err != nil {
+      return reps, err
+    }
+
+    // we put all the resources found in a map path -> resource.
+    // this will be used later to query which requested resource was found
+    // or not and mount the response
+    resourcesMap := make(map[string]*data.Resource)
+    for _, resource := range resources {
+      resourcesMap[resource.Path] = resource
+    }
+
+    for _, requestedPath := range requestedPaths {
       // if the requested path does not belong to the origin collection, skip
       // ('belonging' means that the path's prefix is the same as the collection path)
-      if !strings.HasPrefix(path, origin.Path) {
+      if !strings.HasPrefix(requestedPath, origin.Path) {
         continue
       }
 
-      resource, found, err := global.Storage.GetResource(path)
-      if err != nil && err != errs.ResourceNotFoundError {
-        return nil, err
-      }
-
-      reps = append(reps, reportRes{path, resource, found})
+      resource, found := resourcesMap[requestedPath]
+      reps = append(reps, reportRes{requestedPath, resource, found})
     }
   } else {
     reps = append(reps, reportRes{origin.Path, origin, true})

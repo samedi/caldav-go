@@ -16,6 +16,7 @@ import (
 
 func TestMain(m *testing.M) {
   go startServer()
+
   // wait for the server to be started
   time.Sleep(time.Second/3)
   os.Exit(m.Run())
@@ -311,8 +312,8 @@ func TestREPORT(t *testing.T) {
       <D:getetag/>
     </D:prop>
     <D:href>/test-data/report/123-456-789.ics</D:href>
-    <D:href>/test-data/report/000-000-000.ics</D:href>
     <D:href>/foo/bar</D:href>
+    <D:href>/test-data/report/000-000-000.ics</D:href>
   </C:calendar-multiget>
   `
 
