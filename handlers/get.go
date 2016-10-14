@@ -17,13 +17,6 @@ func (gh getHandler) Handle() *Response {
     return gh.response.SetError(err)
   }
 
-  etag, _ := resource.GetEtag()
-  gh.response.SetHeader("ETag", etag)
-  lastm, _ := resource.GetLastModified(http.TimeFormat)
-  gh.response.SetHeader("Last-Modified", lastm)
-  ctype, _ := resource.GetContentType()
-  gh.response.SetHeader("Content-Type", ctype)
-
   var response string
   if gh.onlyHeaders {
     response = ""
@@ -31,5 +24,14 @@ func (gh getHandler) Handle() *Response {
     response, _ = resource.GetContentData()
   }
 
-  return gh.response.Set(http.StatusOK, response)
+  etag, _ := resource.GetEtag()
+  lastm, _ := resource.GetLastModified(http.TimeFormat)
+  ctype, _ := resource.GetContentType()
+
+  gh.response.SetHeader("ETag", etag).
+              SetHeader("Last-Modified", lastm).
+              SetHeader("Content-Type", ctype).
+              Set(http.StatusOK, response)
+
+  return gh.response
 }

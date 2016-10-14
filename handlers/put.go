@@ -55,11 +55,11 @@ func (ph putHandler) Handle() *Response {
     }
   }
 
-  if success {
-    resourceEtag, _ := resource.GetEtag()
-    ph.response.SetHeader("ETag", resourceEtag)
-    return ph.response.Set(http.StatusCreated, "")
+  if !success {
+    return ph.response.Set(http.StatusPreconditionFailed, "")
   }
 
-  return ph.response.Set(http.StatusPreconditionFailed, "")
+  resourceEtag, _ := resource.GetEtag()
+  return ph.response.SetHeader("ETag", resourceEtag).
+                     Set(http.StatusCreated, "")
 }
