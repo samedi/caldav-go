@@ -339,6 +339,47 @@ func TestMatch14(t *testing.T) {
   assertFilterMatch(filterXML, res, t)
 }
 
+func TestGetTimeRangeFilter(t *testing.T) {
+  // First testing when the filters contain a time-range filter
+  filterXML := `
+  <filter>
+    <comp-filter name="VCALENDAR">
+      <comp-filter name="VEVENT">
+        <time-range start="20150916T000000Z" end="20160916T000000Z"/>
+      </comp-filter>
+    </comp-filter>
+  </filter>`
+  filters, err := ParseResourceFilters(filterXML); panicerr(err)
+
+  timeRange := filters.GetTimeRangeFilter()
+
+  if timeRange == nil {
+    t.Error("should have returned the time range filter, not nil.")
+    return
+  }
+
+  if timeRange.Attr("start") != "20150916T000000Z" || timeRange.Attr("end") != "20160916T000000Z" {
+    t.Error("should have returned the correct time range filter with the correct attributes")
+  }
+
+  // Now testing when the filters DO NOT contain a time-range filter
+  filterXML = `
+  <filter>
+    <comp-filter name="VCALENDAR">
+      <comp-filter name="VEVENT">
+      </comp-filter>
+    </comp-filter>
+  </filter>`
+
+  filters, err = ParseResourceFilters(filterXML); panicerr(err)
+
+  timeRange = filters.GetTimeRangeFilter()
+
+  if timeRange != nil {
+    t.Error("should not have returned time range filter")
+  }
+}
+
 func assertFilterMatch(filterXML string, res FakeResource, t *testing.T) {
   filter, err := ParseResourceFilters(filterXML); panicerr(err)
   if !filter.Match(&res) {

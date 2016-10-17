@@ -70,6 +70,17 @@ func newFilterFromEtreeElem(elem *etree.Element) ResourceFilter {
   return filter
 }
 
+func (f *ResourceFilter) Attr(attrName string) string {
+  return f.attrs[attrName]
+}
+
+// GetTimeRangeFilter checks if the current filter has a child "time-range" filter and
+// returns it (wrapped in a `ResourceFilter` type). It returns nil if the current filter does
+// not contain any "time-range" filter.
+func (f *ResourceFilter) GetTimeRangeFilter() *ResourceFilter {
+  return f.findChild(TAG_TIME_RANGE, true)
+}
+
 func (f *ResourceFilter) Match(target ResourceInterface) bool {
   if f.name == TAG_FILTER {
     return f.rootFilterMatch(target)
@@ -298,13 +309,31 @@ func (f *ResourceFilter) isEmpty() bool {
 }
 
 func (f *ResourceFilter) contains(filterName string) bool {
-  for _, child := range f.getChildren() {
-    if child.name == filterName {
-      return true
-    }
+  if f.findChild(filterName, false) != nil {
+    return true
   }
 
   return false
+}
+
+func (f *ResourceFilter) findChild(filterName string, dig bool) *ResourceFilter {
+  for _, child := range f.getChildren() {
+    if child.name == filterName {
+      return &child
+    }
+
+    if !dig {
+      continue
+    }
+
+    dugChild := child.findChild(filterName, true)
+
+    if dugChild != nil {
+      return dugChild
+    }
+  }
+
+  return nil
 }
 
 // lazy evaluation of the child filters
