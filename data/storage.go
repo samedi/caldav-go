@@ -12,6 +12,14 @@ import (
 type Storage interface {
   GetResources(rpath string, depth int) ([]Resource, error)
   GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error)
+  /* Fetch a list of resources by path from the storage
+  *
+  * This method should fetch all the `rpaths` and return an array
+  * of the reosurces found. No error 404 will be returned if an
+  * element cannot be found.
+  *
+  * errors can be returned if errors other than "not found" happened. */
+  GetResourcesByList(rpaths []string) ([]*Resource, error)
   GetResource(rpath string) (*Resource, bool, error)
   IsResourcePresent(rpath string) bool
   CreateResource(rpath, content string) (*Resource, error)
@@ -49,21 +57,6 @@ func (fs *FileStorage) GetResources(rpath string, depth int) ([]Resource, error)
   return result, nil
 }
 
-func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
-  resources, err := fs.GetResources(rpath, 0)
-
-  if err != nil {
-    return nil, false, err
-  }
-
-  if resources == nil || len(resources) == 0 {
-    return nil, false, errs.ResourceNotFoundError
-  }
-
-  res := resources[0]
-  return &res, true, nil
-}
-
 func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error) {
   result := []Resource{}
 
@@ -84,6 +77,42 @@ func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilt
   }
 
   return result, nil
+}
+
+/*
+ * Since file access is realtively cheap, we just read by fanning out to `GetResource`
+ */
+func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]*Resource, error) {
+  results := []*Resource{}
+
+  for _, rpath := range rpaths {
+    resource, found, err := fs.GetResource(rpath)
+
+    if err != nil && err != errs.ResourceNotFoundError {
+      return nil, err
+    }
+
+    if found {
+      results = append(results, resource)
+    }
+  }
+
+  return results, nil
+}
+
+func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
+  resources, err := fs.GetResources(rpath, 0)
+
+  if err != nil {
+    return nil, false, err
+  }
+
+  if resources == nil || len(resources) == 0 {
+    return nil, false, errs.ResourceNotFoundError
+  }
+
+  res := resources[0]
+  return &res, true, nil
 }
 
 func (fs *FileStorage) IsResourcePresent(rpath string) bool {
