@@ -11,8 +11,8 @@ import (
 // The storage is the responsible for the CRUD operations on the caldav resources.
 type Storage interface {
   GetResources(rpath string, depth int) ([]Resource, error)
+  GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error)
   GetResource(rpath string) (*Resource, bool, error)
-  GetChildResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error)
   IsResourcePresent(rpath string) bool
   CreateResource(rpath, content string) (*Resource, error)
   UpdateResource(rpath, content string) (*Resource, error)
@@ -64,7 +64,7 @@ func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
   return &res, true, nil
 }
 
-func (fs *FileStorage) GetChildResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error) {
+func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error) {
   result := []Resource{}
 
   childPaths := fs.getDirectoryChildPaths(rpath)

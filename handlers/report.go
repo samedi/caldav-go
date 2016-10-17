@@ -99,7 +99,7 @@ func (rh reportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
 
   if origin.IsCollection() {
     filters, _ := data.ParseResourceFilters(filtersXML.toString())
-    resources, err := global.Storage.GetChildResourcesByFilters(origin.Path, filters)
+    resources, err := global.Storage.GetResourcesByFilters(origin.Path, filters)
 
     if err != nil {
       return reps, err
