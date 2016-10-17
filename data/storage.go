@@ -19,7 +19,7 @@ type Storage interface {
   * element cannot be found.
   *
   * errors can be returned if errors other than "not found" happened. */
-  GetResourcesByList(rpaths []string) ([]*Resource, error)
+  GetResourcesByList(rpaths []string) ([]Resource, error)
   GetResource(rpath string) (*Resource, bool, error)
   IsResourcePresent(rpath string) bool
   CreateResource(rpath, content string) (*Resource, error)
@@ -82,8 +82,8 @@ func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilt
 /*
  * Since file access is realtively cheap, we just read by fanning out to `GetResource`
  */
-func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]*Resource, error) {
-  results := []*Resource{}
+func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
+  results := []Resource{}
 
   for _, rpath := range rpaths {
     resource, found, err := fs.GetResource(rpath)
@@ -93,7 +93,7 @@ func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]*Resource, error) 
     }
 
     if found {
-      results = append(results, resource)
+      results = append(results, *resource)
     }
   }
 
