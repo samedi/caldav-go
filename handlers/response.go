@@ -2,7 +2,6 @@ package handlers
 
 import (
   "io"
-  "log"
   "net/http"
   "git.samedi.cc/ferraz/caldav/errs"
 )
@@ -49,12 +48,8 @@ func (this *Response) SetError(err error) *Response {
 }
 
 func (this *Response) Write(writer http.ResponseWriter) {
-  if this.Error != nil {
-    log.Printf("\n*** Error: %s ***\n", this.Error)
-
-    if this.Error == errs.UnauthorizedError {
-      this.SetHeader("WWW-Authenticate", `Basic realm="User Visible Realm"`)
-    }
+  if this.Error == errs.UnauthorizedError {
+    this.SetHeader("WWW-Authenticate", `Basic realm="Restricted"`)
   }
 
   for key, values := range this.Header {
