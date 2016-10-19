@@ -137,7 +137,8 @@ func (rh reportHandler) fetchResourcesByList(origin *data.Resource, requestedPat
     // or not and mount the response
     resourcesMap := make(map[string]*data.Resource)
     for _, resource := range resources {
-      resourcesMap[resource.Path] = &resource
+      r := resource
+      resourcesMap[resource.Path] = &r
     }
 
     for _, requestedPath := range requestedPaths {

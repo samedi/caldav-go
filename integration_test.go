@@ -299,8 +299,12 @@ func TestPROPFIND(t *testing.T) {
 
 func TestREPORT(t *testing.T) {
   collection := "/test-data/report/"
-  rName := "123-456-789.ics"
-  createResource(collection, rName, "BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT")
+  r1Name := "123-456-789.ics"
+  r1Data := "BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT"
+  createResource(collection, r1Name, r1Data)
+  r2Name := "789-456-123.ics"
+  r2Data := "BEGIN:VEVENT\nSUMMARY:Watch movies\nEND:VEVENT"
+  createResource(collection, r2Name, r2Data)
 
   // Test 1: when the URL path points to a collection and passing the list of hrefs in the body.
   path := collection
@@ -310,16 +314,18 @@ func TestREPORT(t *testing.T) {
   <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop>
       <D:getetag/>
+      <C:calendar-data/>
     </D:prop>
     <D:href>/test-data/report/123-456-789.ics</D:href>
     <D:href>/foo/bar</D:href>
+    <D:href>/test-data/report/789-456-123.ics</D:href>
     <D:href>/test-data/report/000-000-000.ics</D:href>
   </C:calendar-multiget>
   `
 
   // the response should contain only the hrefs that belong to the collection.
   // the ones that do not belong are ignored.
-  expectedRespBody := `
+  expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
   <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
     <D:response>
@@ -327,6 +333,17 @@ func TestREPORT(t *testing.T) {
       <D:propstat>
         <D:prop>
           <D:getetag>?</D:getetag>
+          <C:calendar-data>%s</C:calendar-data>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+    <D:response>
+      <D:href>/test-data/report/789-456-123.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
+          <C:calendar-data>%s</C:calendar-data>
         </D:prop>
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>
@@ -336,18 +353,18 @@ func TestREPORT(t *testing.T) {
       <D:status>HTTP/1.1 404 Not Found</D:status>
     </D:response>
   </D:multistatus>
-  `
+  `, r1Data, r2Data)
 
   resp := doRequest("REPORT", path, reportXML, nil)
   respBody := readResponseBody(resp)
   assertMultistatusXML(respBody, expectedRespBody, t)
 
   // Test 2: when the URL path points to an actual resource and using the same body as before
-  path = collection + rName
+  path = collection + r1Name
 
   // the response should contain only the resource from the URL.
   // the rest are ignored
-  expectedRespBody = `
+  expectedRespBody = fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
   <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
     <D:response>
@@ -355,12 +372,13 @@ func TestREPORT(t *testing.T) {
       <D:propstat>
         <D:prop>
           <D:getetag>?</D:getetag>
+          <C:calendar-data>%s</C:calendar-data>
         </D:prop>
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>
     </D:response>
   </D:multistatus>
-  `
+  `, r1Data)
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
@@ -451,30 +469,6 @@ func createResource(collection, rName, data string) {
   f.WriteString(data)
 }
 
-func assertMultistatusXML(target, expectation string, t *testing.T) {
-  cleanXML := func(xml string) string {
-    cleanupMap := map[string]string{
-      `\r?\n`: "",
-      `>[\s|\t]+<`: "><",
-      `<D:getetag>.+</D:getetag>`: `<D:getetag>?</D:getetag>`,
-      `<CS:getctag>.+</CS:getctag>`: `<CS:getctag>?</CS:getctag>`,
-      `<D:getlastmodified>.+</D:getlastmodified>`: `<D:getlastmodified>?</D:getlastmodified>`,
-    }
-
-    for k, v := range cleanupMap {
-      re := regexp.MustCompile(k)
-      xml = re.ReplaceAllString(xml, v)
-    }
-
-    return strings.TrimSpace(xml)
-  }
-
-  target = cleanXML(target)
-  expectation = cleanXML(expectation)
-
-  assertStr(target, expectation, t)
-}
-
 // ================= ASSERTIONS ============================
 
 func assertStr(target string, expectation string, t *testing.T) {
@@ -516,6 +510,32 @@ func assertResourceData(rpath, expectation string, t *testing.T) {
   panicerr(err)
   if dataStr != expectation {
     t.Error("Expected:", expectation, "| Got:", dataStr, "\n ->", logFailedLine())
+  }
+}
+
+func assertMultistatusXML(target, expectation string, t *testing.T) {
+  cleanXML := func(xml string) string {
+    cleanupMap := map[string]string{
+      `\r?\n`: "",
+      `>[\s|\t]+<`: "><",
+      `<D:getetag>[^<]+</D:getetag>`: `<D:getetag>?</D:getetag>`,
+      `<CS:getctag>[^<]+</CS:getctag>`: `<CS:getctag>?</CS:getctag>`,
+      `<D:getlastmodified>[^<]+</D:getlastmodified>`: `<D:getlastmodified>?</D:getlastmodified>`,
+    }
+
+    for k, v := range cleanupMap {
+      re := regexp.MustCompile(k)
+      xml = re.ReplaceAllString(xml, v)
+    }
+
+    return strings.TrimSpace(xml)
+  }
+
+  target2 := cleanXML(target)
+  expectation2 := cleanXML(expectation)
+
+  if target2 != expectation2 {
+    t.Error("Expected:", expectation2, "| Got:", target2, "\n ->", logFailedLine())
   }
 }
 
