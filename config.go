@@ -8,3 +8,7 @@ import (
 func SetupStorage(stg data.Storage) {
   global.Storage = stg
 }
+
+func SetupUser(username string) {
+  global.User = &data.CalUser{username}
+}

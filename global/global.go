@@ -6,5 +6,7 @@ import (
   "git.samedi.cc/ferraz/caldav/data"
 )
 
-// default storage is the `FileStorage`, that deals with the resources as files from the File System.
+// The global storage used in the CRUD operations of resources. Default storage is the `FileStorage`.
 var Storage data.Storage = new(data.FileStorage)
+// Current caldav user. It is used to keep the info of the current user that is interacting with the calendar.
+var User *data.CalUser

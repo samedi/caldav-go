@@ -5,6 +5,7 @@ import (
   "net/http"
   "encoding/xml"
   "git.samedi.cc/ferraz/caldav/lib"
+  "git.samedi.cc/ferraz/caldav/global"
   "git.samedi.cc/ferraz/caldav/data"
   "git.samedi.cc/ferraz/caldav/ixml"
 )
@@ -92,9 +93,8 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
         pvalue.Content, pfound = "", true
       }
     case xml.Name{Space: "DAV:", Local: "current-user-principal"}:
-      currentUser := getCurrentUser()
-      if currentUser != nil {
-        pvalue.Content, pfound = fmt.Sprintf("<D:href>/%s/</D:href>", currentUser.Name), true
+      if global.User != nil {
+        pvalue.Content, pfound = fmt.Sprintf("<D:href>/%s/</D:href>", global.User.Name), true
       }
     case xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "supported-calendar-component-set"}:
       if resource.IsCollection() {

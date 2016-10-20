@@ -3,16 +3,10 @@ package handlers
 import (
   "net/http"
   "git.samedi.cc/ferraz/caldav/lib"
-  "git.samedi.cc/ferraz/caldav/data"
 )
 
 // Supported ICal components on this server.
 var supportedComponents = []string{lib.VCALENDAR, lib.VEVENT}
-
-// TODO: implement after integrate authentication
-func getCurrentUser() *data.CalUser {
-  return nil
-}
 
 // parseResourceDepth parses the Depth value from the request header and returns a boolean flag,
 // where `true` means to include the children on subsequent searches, and `false` to not include.

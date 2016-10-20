@@ -28,7 +28,7 @@ const (
 
 func startServer() {
   http.HandleFunc("/", RequestHandler)
-	http.ListenAndServe(":" + TEST_SERVER_PORT, nil)
+  http.ListenAndServe(":" + TEST_SERVER_PORT, nil)
 }
 
 func TestOPTIONS(t *testing.T) {
@@ -158,6 +158,9 @@ func TestPROPFIND(t *testing.T) {
   rpath := collection + rName
   createResource(collection, rName, "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT")
 
+  currentUser := "foo-bar-baz"
+  SetupUser(currentUser)
+
   propfindXML := `
   <?xml version="1.0" encoding="utf-8" ?>
   <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
@@ -179,7 +182,7 @@ func TestPROPFIND(t *testing.T) {
    </D:prop>
   </D:propfind>
   `
-  expectedRespBody := `
+  expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
   <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
     <D:response>
@@ -206,19 +209,21 @@ func TestPROPFIND(t *testing.T) {
             <D:href>/test-data/propfind/123-456-789.ics</D:href>
           </C:calendar-home-set>
           <D:resourcetype/>
+          <D:current-user-principal>
+            <D:href>/%s/</D:href>
+          </D:current-user-principal>
         </D:prop>
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>
       <D:propstat>
         <D:prop>
-          <D:current-user-principal/>
           <C:supported-calendar-component-set/>
         </D:prop>
         <D:status>HTTP/1.1 404 Not Found</D:status>
       </D:propstat>
     </D:response>
   </D:multistatus>
-  `
+  `, currentUser)
 
   resp = doRequest("PROPFIND", rpath, propfindXML, nil)
   respBody := readResponseBody(resp)
