@@ -14,25 +14,19 @@ func getCurrentUser() *data.CalUser {
   return nil
 }
 
-const (
-	infiniteDepth = -1
-	invalidDepth  = -2
-)
-
-func getDepth(request *http.Request) int {
-  d := "infinity"
-
-  if hd := request.Header["Depth"]; len(hd) != 0 {
-    d = hd[0]
+// parseResourceDepth parses the Depth value from the request header and returns a boolean flag,
+// where `true` means to include the children on subsequent searches, and `false` to not include.
+// This is used on request methods (e.g. PROPFIND) that are requesting a specific resource and may or
+// may not want to include the resource's children in the response.
+func parseResourceDepth(request *http.Request) bool {
+  var depth string
+  if depthHeader := request.Header["Depth"]; len(depthHeader) != 0 {
+    depth = depthHeader[0]
   }
 
-	switch d {
-	case "0":
-		return 0
-	case "1":
-		return 1
-	case "infinity":
-		return infiniteDepth
-	}
-	return invalidDepth
+  if depth == "1" {
+    return true
+  }
+
+	return false
 }

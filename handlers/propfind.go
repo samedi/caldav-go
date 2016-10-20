@@ -14,7 +14,7 @@ type propfindHandler struct {
 
 func (ph propfindHandler) Handle() *Response {
   // get the target resources based on the request URL
-  resources, err := global.Storage.GetResources(ph.request.URL.Path, getDepth(ph.request))
+  resources, err := global.Storage.GetResources(ph.request.URL.Path, parseResourceDepth(ph.request))
   if err != nil {
     return ph.response.SetError(err)
   }

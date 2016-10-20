@@ -10,7 +10,7 @@ import (
 
 // The storage is the responsible for the CRUD operations on the caldav resources.
 type Storage interface {
-  GetResources(rpath string, depth int) ([]Resource, error)
+  GetResources(rpath string, withChildren bool) ([]Resource, error)
   GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error)
   /* Fetch a list of resources by path from the storage
   *
@@ -30,7 +30,7 @@ type Storage interface {
 type FileStorage struct {
 }
 
-func (fs *FileStorage) GetResources(rpath string, depth int) ([]Resource, error) {
+func (fs *FileStorage) GetResources(rpath string, withChildren bool) ([]Resource, error) {
   result := []Resource{}
 
   // tries to open the file by the given path
@@ -44,8 +44,8 @@ func (fs *FileStorage) GetResources(rpath string, depth int) ([]Resource, error)
   resource := NewResource(rpath, &FileResourceAdapter{finfo, rpath})
   result = append(result, resource)
 
-  // if depth is 1 and the file is a dir, add its children to the result list
-  if depth == 1 && finfo.IsDir() {
+  // if the file is a dir, add its children to the result list
+  if withChildren && finfo.IsDir() {
     dirFiles, _ := f.Readdir(0)
     for _, finfo := range dirFiles {
       childPath := files.JoinPaths(rpath, finfo.Name())
@@ -101,7 +101,7 @@ func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
 }
 
 func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
-  resources, err := fs.GetResources(rpath, 0)
+  resources, err := fs.GetResources(rpath, false)
 
   if err != nil {
     return nil, false, err
