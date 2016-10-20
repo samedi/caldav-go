@@ -40,6 +40,8 @@ func (this *Response) SetError(err error) *Response {
     this.Status = http.StatusNotFound
   case errs.UnauthorizedError:
     this.Status = http.StatusUnauthorized
+  case errs.ForbiddenError:
+    this.Status = http.StatusForbidden
   default:
     this.Status = http.StatusInternalServerError
   }
