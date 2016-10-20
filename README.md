@@ -46,9 +46,66 @@ func runServer() {
 func myHandler(writer http.ResponseWriter, request *http.Request) {
   response := caldav.HandleRequest(writer, request)
   // ... do something with the `response` ...
-  response.Write(writer) // the response is written in the current `ResponseWriter` and ready to be sent back
+  // the response is written with the current `http.ResponseWriter` and ready to be sent back
+  response.Write(writer)
 }
 ```
+
+### Storage & Resources
+
+The storage is where the caldav resources are stored. To interact with that, the caldav lib needs only a type that conforms with the  `data.StorageInterface` to operate on top of the storage. Basically, this interface defines all the CRUD functions to work on top of the resources. With that, resources can be stored anywhere: in the filesystem, in the cloud, database, etc. As long as the used storage implements all the required storage interface functions, the caldav lib will work fine.
+
+For example, we could use the following dummy storage implementation:
+
+```go
+type DummyStorage struct{
+}
+
+func (d *DummyStorage) GetResources(rpath string, withChildren bool) ([]Resource, error) {
+  return []Resource{}, nil
+}
+
+func (d *DummyStorage) GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error) {
+  return []Resource{}, nil
+}
+
+func (d *DummyStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
+  return []Resource{}, nil
+}
+
+func (d *DummyStorage) GetResource(rpath string) (*Resource, bool, error) {
+  return nil, false, nil
+}
+
+func (d *DummyStorage) IsResourcePresent(rpath string) bool {
+  return false
+}
+
+func (d *DummyStorage) CreateResource(rpath, content string) (*Resource, error) {
+  return nil, nil
+}
+
+func (d *DummyStorage) UpdateResource(rpath, content string) (*Resource, error) {
+  return nil, nil
+}
+
+func (d *DummyStorage) DeleteResource(rpath string) error {
+  return nil
+}
+```
+
+Then we just need to tell the caldav lib to use our dummy storage:
+
+```go
+dummyStg := new(DummyStorage)
+caldav.SetupStorage(dummyStg)
+```
+
+All the CRUD operations on resources will then be forwarded to our dummy storage.
+
+The default storage used (if none is explicitly set) if the `data.FileStorage` which deals with resources as files in the File System.
+
+The resources can be of two types: collection and non-collection. A collection resource is a basically a resource that has children resources, but does not have any data content. A non-collection resource is a resource that does not have children, but has data. In the case of a file storage, collections correspond to directories and non-collection to plain files. The data of a caldav resource is all the info that shows up in the calendar client, in the [iCalendar](https://en.wikipedia.org/wiki/ICalendar) format.
 
 ### Features
 
