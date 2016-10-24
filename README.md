@@ -103,9 +103,9 @@ caldav.SetupStorage(dummyStg)
 
 All the CRUD operations on resources will then be forwarded to our dummy storage.
 
-The default storage used (if none is explicitly set) if the `data.FileStorage` which deals with resources as files in the File System.
+The default storage used (if none is explicitly set) is the `data.FileStorage` which deals with resources as files in the File System.
 
-The resources can be of two types: collection and non-collection. A collection resource is a basically a resource that has children resources, but does not have any data content. A non-collection resource is a resource that does not have children, but has data. In the case of a file storage, collections correspond to directories and non-collection to plain files. The data of a caldav resource is all the info that shows up in the calendar client, in the [iCalendar](https://en.wikipedia.org/wiki/ICalendar) format.
+The resources can be of two types: collection and non-collection. A collection resource is basically a resource that has children resources, but does not have any data content. A non-collection resource is a resource that does not have children, but has data. In the case of a file storage, collections correspond to directories and non-collection to plain files. The data of a caldav resource is all the info that shows up in the calendar client, in the [iCalendar](https://en.wikipedia.org/wiki/ICalendar) format.
 
 ### Features
 
