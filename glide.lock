@@ -1,0 +1,10 @@
+hash: d9f44d2807a48f6d4684207e533f25f7ad7c9fc0b664de38d0b10b29c8a0ae66
+updated: 2016-10-26T10:44:11.203588094+02:00
+imports:
+- name: github.com/beevik/etree
+  version: ce53c4ce608a92897d74ff8fd47b5a1131e5606c
+- name: github.com/dferrazm/ical-go
+  version: e079cdbf5fb929074fafe78415ed3f4208e6241e
+  subpackages:
+  - ical
+testImports: []
