@@ -8,6 +8,18 @@ This is a Go lib that aims to implement the CalDAV specification ([RFC4791]). It
 go get git.samedi.cc/ferraz/caldav
 ```
 
+### Dependencies
+
+For dependency management, `glide` is used.
+
+```bash
+# install glide (once!)
+curl https://glide.sh/get | sh
+
+# install dependencies
+glide install
+```
+
 ### How to use it
 
 The easiest way to quickly implement a CalDAV server is by just using the lib's request handler. Example:
