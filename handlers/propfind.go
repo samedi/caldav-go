@@ -8,11 +8,12 @@ import (
 
 type propfindHandler struct {
   request *http.Request
-  requestBody string
   response *Response
 }
 
 func (ph propfindHandler) Handle() *Response {
+  requestBody := readRequestBody(ph.request)
+
   // get the target resources based on the request URL
   resources, err := global.Storage.GetResources(ph.request.URL.Path, parseResourceDepth(ph.request))
   if err != nil {
@@ -28,7 +29,7 @@ func (ph propfindHandler) Handle() *Response {
     Prop    XMLProp2  `xml:"DAV: prop"`
   }
   var requestXML XMLRoot2
-  xml.Unmarshal([]byte(ph.requestBody), &requestXML)
+  xml.Unmarshal([]byte(requestBody), &requestXML)
 
   multistatus := newMultistatusResp()
   // for each href, build the multistatus responses

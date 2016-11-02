@@ -12,12 +12,13 @@ import (
 
 type reportHandler struct{
   request *http.Request
-  requestBody string
   response *Response
 }
 
 // See more at RFC4791#section-7.1
 func (rh reportHandler) Handle() *Response {
+  requestBody := readRequestBody(rh.request)
+
   urlResource, found, err := global.Storage.GetResource(rh.request.URL.Path)
   if !found {
     return rh.response.Set(http.StatusNotFound, "")
@@ -27,7 +28,7 @@ func (rh reportHandler) Handle() *Response {
 
   // read body string to xml struct
   var requestXML reportRootXML
-  xml.Unmarshal([]byte(rh.requestBody), &requestXML)
+  xml.Unmarshal([]byte(requestBody), &requestXML)
 
   // The resources to be reported are fetched by the type of the request. If it is
   // a `calendar-multiget`, the resources come based on a set of `hrefs` in the request body.

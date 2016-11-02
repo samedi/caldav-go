@@ -8,11 +8,11 @@ import (
 
 type putHandler struct {
   request *http.Request
-  requestBody string
   response *Response
 }
 
 func (ph putHandler) Handle() *Response {
+  requestBody := readRequestBody(ph.request)
   precond := requestPreconditions{ph.request}
   success := false
 
@@ -28,7 +28,7 @@ func (ph putHandler) Handle() *Response {
   // 1. Item NOT FOUND and there is NO ETAG match header: CREATE a new item
   if !found && !precond.IfMatchPresent() {
     // create new event resource
-    resource, err = global.Storage.CreateResource(resourcePath, ph.requestBody)
+    resource, err = global.Storage.CreateResource(resourcePath, requestBody)
     if err != nil {
       return ph.response.SetError(err)
     }
@@ -46,7 +46,7 @@ func (ph putHandler) Handle() *Response {
     resourceEtag, _ := resource.GetEtag()
     if found && precond.IfMatch(resourceEtag) && !precond.IfNoneMatch("*") {
       // update resource
-      resource, err = global.Storage.UpdateResource(resourcePath, ph.requestBody)
+      resource, err = global.Storage.UpdateResource(resourcePath, requestBody)
       if err != nil {
         return ph.response.SetError(err)
       }
