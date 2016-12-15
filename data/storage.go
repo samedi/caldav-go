@@ -32,8 +32,6 @@ type Storage interface {
   // GetResource gets the requested resource based on a given `rpath` path. It returns the resource (if found) or
   // nil (if not found). Also returns a flag specifying if the resource was found or not.
   GetResource(rpath string) (*Resource, bool, error)
-  // IsResourcePresent checks if any resource exists on the given `rpath` path.
-  IsResourcePresent(rpath string) bool
   // CreateResource creates a new resource on the `rpath` path with a given `content`.
   CreateResource(rpath, content string) (*Resource, error)
   // UpdateResource udpates a resource on the `rpath` path with a given `content`.
@@ -130,16 +128,10 @@ func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
   return &res, true, nil
 }
 
-func (fs *FileStorage) IsResourcePresent(rpath string) bool {
-  _, found, _ := fs.GetResource(rpath)
-
-  return found
-}
-
 func (fs *FileStorage) CreateResource(rpath, content string) (*Resource, error) {
   rAbsPath := files.AbsPath(rpath)
 
-  if fs.IsResourcePresent(rAbsPath) {
+  if fs.isResourcePresent(rAbsPath) {
     return nil, errs.ResourceAlreadyExistsError
   }
 
@@ -179,6 +171,12 @@ func (fs *FileStorage) DeleteResource(rpath string) error {
   err := os.Remove(files.AbsPath(rpath))
 
   return err
+}
+
+func (fs *FileStorage) isResourcePresent(rpath string) bool {
+  _, found, _ := fs.GetResource(rpath)
+
+  return found
 }
 
 func (fs *FileStorage) openResourceFile(filepath string, mode int) (*os.File, error) {

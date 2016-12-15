@@ -89,10 +89,6 @@ func (d *DummyStorage) GetResource(rpath string) (*Resource, bool, error) {
   return nil, false, nil
 }
 
-func (d *DummyStorage) IsResourcePresent(rpath string) bool {
-  return false
-}
-
 func (d *DummyStorage) CreateResource(rpath, content string) (*Resource, error) {
   return nil, nil
 }
