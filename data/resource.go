@@ -154,12 +154,10 @@ func (r *Resource) GetDisplayName() (string, bool) {
 }
 
 func (r *Resource) GetContentData() (string, bool) {
-  if r.IsCollection() {
-    return "", false
-  }
-
   data := r.adapter.GetContent()
-  return data, true
+  found := data != ""
+
+  return data, found
 }
 
 func (r *Resource) GetContentLength() (string, bool) {
@@ -245,6 +243,10 @@ func (adp *FileResourceAdapter) IsCollection() bool {
 }
 
 func (adp *FileResourceAdapter) GetContent() string {
+  if adp.IsCollection() {
+    return ""
+  }
+
   data, err := ioutil.ReadFile(files.AbsPath(adp.resourcePath))
   if err != nil {
     log.Printf("ERROR: Could not read file content for the resource.\nError: %s.\nResource path: %s.", err, adp.resourcePath)

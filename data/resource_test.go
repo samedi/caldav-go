@@ -117,15 +117,9 @@ func TestContentData(t *testing.T) {
   res := NewResource("/foo", adp)
 
   adp.contentData = "EVENT;"
-
-  adp.collection = true
-  data, found := res.GetContentData()
-  if data != "" || found {
-    t.Error("Content data should be empty for collections")
-  }
-
   adp.collection = false
-  data, found = res.GetContentData()
+
+  data, found := res.GetContentData()
   if data != "EVENT;" || !found {
     t.Error("Content data should be EVENT;")
   }
