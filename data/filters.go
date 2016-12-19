@@ -22,6 +22,9 @@ const (
   TAG_TIME_RANGE = "time-range"
   TAG_TEXT_MATCH = "text-match"
   TAG_IS_NOT_DEFINED = "is-not-defined"
+
+  // from the RFC, the time range `start` and `end` attributes MUST be in UTC and in this specific format
+  FILTER_TIME_FORMAT = "20060102T150405Z"
 )
 
 type ResourceFilter struct {
@@ -72,6 +75,17 @@ func newFilterFromEtreeElem(elem *etree.Element) ResourceFilter {
 
 func (f *ResourceFilter) Attr(attrName string) string {
   return f.attrs[attrName]
+}
+
+func (f *ResourceFilter) TimeAttr(attrName string) *time.Time {
+
+
+  t, err := time.Parse(FILTER_TIME_FORMAT, f.attrs[attrName])
+  if err != nil {
+    return nil
+  }
+
+  return &t
 }
 
 // GetTimeRangeFilter checks if the current filter has a child "time-range" filter and
@@ -177,16 +191,13 @@ func (f *ResourceFilter) timeRangeMatch(target ResourceInterface) bool {
     return false
   }
 
-  // from the RFC, the `start` and `end` attributes MUST be in UTC and in this specific format
-  timeParseFormat := "20060102T150405Z"
-
-  rangeStart, err := time.Parse(timeParseFormat, startAttr)
+  rangeStart, err := time.Parse(FILTER_TIME_FORMAT, startAttr)
   if err != nil {
     log.Printf("ERROR: Could not parse start time in time-range filter.\nError: %s.\nStart attr: %s", err, startAttr)
     return false
   }
 
-  rangeEnd, err := time.Parse(timeParseFormat, endAttr)
+  rangeEnd, err := time.Parse(FILTER_TIME_FORMAT, endAttr)
   if err != nil {
     log.Printf("ERROR: Could not parse end time in time-range filter.\nError: %s.\nEnd attr: %s", err, endAttr)
     return false

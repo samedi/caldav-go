@@ -380,6 +380,38 @@ func TestGetTimeRangeFilter(t *testing.T) {
   }
 }
 
+func TestTimeAttr(t *testing.T) {
+  // test with valid times
+  f := ResourceFilter{
+    attrs: map[string]string{
+      "start": "20150916T000000Z",
+      "end": "20150916T000000Z",
+    },
+  }
+
+  start := f.TimeAttr("start")
+  end := f.TimeAttr("end")
+
+  if start == nil || *start != parseTime("20150916T000000Z") || end == nil || *end != parseTime("20150916T000000Z") {
+    t.Error("filter is returning wrong times")
+  }
+
+  // test with valid start time
+  f = ResourceFilter{
+    attrs: map[string]string{
+      "start": "20150916T000000Z",
+      "end": "invalid time",
+    },
+  }
+
+  start = f.TimeAttr("start")
+  end = f.TimeAttr("end")
+
+  if start == nil || *start != parseTime("20150916T000000Z") || end != nil {
+    t.Error("filter is returning wrong times")
+  }
+}
+
 func assertFilterMatch(filterXML string, res FakeResource, t *testing.T) {
   filter, err := ParseResourceFilters(filterXML); panicerr(err)
   if !filter.Match(&res) {
@@ -413,11 +445,11 @@ func (r *FakeResource) ComponentName() string {
 }
 
 func (r *FakeResource) StartTimeUTC() time.Time {
-  return r.parseTime(r.start)
+  return parseTime(r.start)
 }
 
 func (r *FakeResource) EndTimeUTC() time.Time {
-  return r.parseTime(r.end)
+  return parseTime(r.end)
 }
 
 func (r *FakeResource) Recurrences() []ResourceRecurrence {
@@ -430,8 +462,8 @@ func (r *FakeResource) addRecurrence(startStr string, endStr string) {
   }
 
   r.recurrences = append(r.recurrences, ResourceRecurrence{
-    StartTime: r.parseTime(startStr),
-    EndTime:   r.parseTime(endStr),
+    StartTime: parseTime(startStr),
+    EndTime:   parseTime(endStr),
   })
 }
 
@@ -493,7 +525,7 @@ func (r *FakeResource) getPropParamKey(ppath... string) string {
   return strings.Join(ppath, ":")
 }
 
-func (r *FakeResource) parseTime(timeStr string) time.Time {
+func parseTime(timeStr string) time.Time {
   timeParseFormat := "20060102T150405Z"
   t, _ := time.Parse(timeParseFormat, timeStr)
   return t
