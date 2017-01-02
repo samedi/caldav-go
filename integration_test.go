@@ -161,6 +161,8 @@ func TestPROPFIND(t *testing.T) {
   currentUser := "foo-bar-baz"
   SetupUser(currentUser)
 
+  // Next test will check for properties that have been found for the resource
+
   propfindXML := `
   <?xml version="1.0" encoding="utf-8" ?>
   <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
@@ -178,7 +180,6 @@ func TestPROPFIND(t *testing.T) {
      <C:calendar-home-set/>
      <D:resourcetype/>
      <D:current-user-principal/>
-     <C:supported-calendar-component-set/>
    </D:prop>
   </D:propfind>
   `
@@ -215,6 +216,30 @@ func TestPROPFIND(t *testing.T) {
         </D:prop>
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `, currentUser)
+
+  resp = doRequest("PROPFIND", rpath, propfindXML, nil)
+  respBody := readResponseBody(resp)
+  assertInt(resp.StatusCode, 207, t)
+  assertMultistatusXML(respBody, expectedRespBody, t)
+
+  // Next test will check for properties that have not been found for the resource
+
+  propfindXML = `
+  <?xml version="1.0" encoding="utf-8" ?>
+  <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
+   <D:prop>
+     <C:supported-calendar-component-set/>
+   </D:prop>
+  </D:propfind>
+  `
+  expectedRespBody = fmt.Sprintf(`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/propfind/123-456-789.ics</D:href>
       <D:propstat>
         <D:prop>
           <C:supported-calendar-component-set/>
@@ -223,10 +248,10 @@ func TestPROPFIND(t *testing.T) {
       </D:propstat>
     </D:response>
   </D:multistatus>
-  `, currentUser)
+  `)
 
   resp = doRequest("PROPFIND", rpath, propfindXML, nil)
-  respBody := readResponseBody(resp)
+  respBody = readResponseBody(resp)
   assertInt(resp.StatusCode, 207, t)
   assertMultistatusXML(respBody, expectedRespBody, t)
 
