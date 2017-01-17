@@ -4,12 +4,12 @@ import (
   "fmt"
   "os"
   "time"
-  "runtime"
   "testing"
   "strings"
-  "regexp"
   "net/http"
   "io/ioutil"
+
+  "git.samedi.cc/ferraz/caldav/test"
 )
 
 // ============= TESTS ======================
@@ -34,15 +34,15 @@ func startServer() {
 func TestOPTIONS(t *testing.T) {
   resp := doRequest("OPTIONS", "/test-data/", "", nil)
 
-  if assertInt(len(resp.Header["Allow"]), 1, t) {
-    assertStr(resp.Header["Allow"][0], "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT", t)
+  if test.AssertInt(len(resp.Header["Allow"]), 1, t) {
+    test.AssertStr(resp.Header["Allow"][0], "GET, HEAD, PUT, DELETE, OPTIONS, PROPFIND, REPORT", t)
   }
 
-  if assertInt(len(resp.Header["Dav"]), 1, t) {
-    assertStr(resp.Header["Dav"][0], "1, 3, calendar-access", t)
+  if test.AssertInt(len(resp.Header["Dav"]), 1, t) {
+    test.AssertStr(resp.Header["Dav"][0], "1, 3, calendar-access", t)
   }
 
-  assertInt(resp.StatusCode, http.StatusOK, t)
+  test.AssertInt(resp.StatusCode, http.StatusOK, t)
 }
 
 func TestGET(t *testing.T) {
@@ -55,12 +55,12 @@ func TestGET(t *testing.T) {
   resp := doRequest("GET", rPath, "", nil)
   body := readResponseBody(resp)
 
-  assertInt(len(resp.Header["Etag"]), 1, t)
-  assertInt(len(resp.Header["Last-Modified"]), 1, t)
-  assertInt(len(resp.Header["Content-Type"]), 1, t)
-  assertStr(resp.Header["Content-Type"][0], "text/calendar; component=vcalendar", t)
-  assertStr(body, rData, t)
-  assertInt(resp.StatusCode, http.StatusOK, t)
+  test.AssertInt(len(resp.Header["Etag"]), 1, t)
+  test.AssertInt(len(resp.Header["Last-Modified"]), 1, t)
+  test.AssertInt(len(resp.Header["Content-Type"]), 1, t)
+  test.AssertStr(resp.Header["Content-Type"][0], "text/calendar; component=vcalendar", t)
+  test.AssertStr(body, rData, t)
+  test.AssertInt(resp.StatusCode, http.StatusOK, t)
 }
 
 func TestPUT(t *testing.T) {
@@ -71,52 +71,52 @@ func TestPUT(t *testing.T) {
     "If-Match": "1111111111111",
   }
   resp := doRequest("PUT", rpath, "", headers)
-  assertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
-  assertResourceDoesNotExist(rpath, t)
+  test.AssertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
+  test.AssertResourceDoesNotExist(rpath, t)
 
   // test when trying to create a new resource (no headers this time)
   resourceData := "BEGIN:VEVENT; SUMMARY:Lunch; END:VEVENT"
   resp = doRequest("PUT", rpath, resourceData, nil)
-  assertInt(resp.StatusCode, http.StatusCreated, t)
-  if !assertInt(len(resp.Header["Etag"]), 1, t) {
+  test.AssertInt(resp.StatusCode, http.StatusCreated, t)
+  if !test.AssertInt(len(resp.Header["Etag"]), 1, t) {
     return
   }
   etag := resp.Header["Etag"][0]
-  assertResourceExists(rpath, t)
-  assertResourceData(rpath, resourceData, t)
+  test.AssertResourceExists(rpath, t)
+  test.AssertResourceData(rpath, resourceData, t)
 
   // test when trying to update a collection (folder)
   resp = doRequest("PUT", "/test-data/put/", "", nil)
-  assertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
+  test.AssertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
 
   // test when trying to update the resource but the ETag check (IF-MATCH header) does not match
   originalData := resourceData
   updatedData := "BEGIN:VEVENT; SUMMARY:Meeting; END:VEVENT"
   resp = doRequest("PUT", rpath, updatedData, headers)
-  assertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
-  assertResourceData(rpath, originalData, t)
+  test.AssertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
+  test.AssertResourceData(rpath, originalData, t)
 
   // test when trying to update the resource with the correct ETag check
   headers["If-Match"] = etag
   resp = doRequest("PUT", rpath, updatedData, headers)
-  assertInt(resp.StatusCode, http.StatusCreated, t)
-  assertResourceData(rpath, updatedData, t)
+  test.AssertInt(resp.StatusCode, http.StatusCreated, t)
+  test.AssertResourceData(rpath, updatedData, t)
 
   // test when trying to force update the resource by not passing any ETag check
   originalData = updatedData
   updatedData = "BEGIN:VEVENT; SUMMARY:Gym; END:VEVENT"
   delete(headers, "If-Match")
   resp = doRequest("PUT", rpath, updatedData, headers)
-  assertInt(resp.StatusCode, http.StatusCreated, t)
-  assertResourceData(rpath, updatedData, t)
+  test.AssertInt(resp.StatusCode, http.StatusCreated, t)
+  test.AssertResourceData(rpath, updatedData, t)
 
   // test when trying to update the resource but there is a IF-NONE-MATCH=*
   originalData = updatedData
   updatedData = "BEGIN:VEVENT; SUMMARY:Party; END:VEVENT"
   headers["If-None-Match"] = "*"
   resp = doRequest("PUT", rpath, updatedData, headers)
-  assertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
-  assertResourceData(rpath, originalData, t)
+  test.AssertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
+  test.AssertResourceData(rpath, originalData, t)
 }
 
 func TestDELETE(t *testing.T) {
@@ -127,31 +127,31 @@ func TestDELETE(t *testing.T) {
 
   // test deleting a resource that does not exist
   resp := doRequest("DELETE", "/foo/bar", "", nil)
-  assertInt(resp.StatusCode, http.StatusNotFound, t)
+  test.AssertInt(resp.StatusCode, http.StatusNotFound, t)
 
   // test deleting a collection (folder)
   resp = doRequest("DELETE", collection, "", nil)
-  assertInt(resp.StatusCode, http.StatusMethodNotAllowed, t)
-  assertResourceExists(rpath, t)
+  test.AssertInt(resp.StatusCode, http.StatusMethodNotAllowed, t)
+  test.AssertResourceExists(rpath, t)
 
   // test trying deleting when ETag check fails
   headers := map[string]string{
     "If-Match": "1111111111111",
   }
   resp = doRequest("DELETE", rpath, "", headers)
-  assertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
-  assertResourceExists(rpath, t)
+  test.AssertInt(resp.StatusCode, http.StatusPreconditionFailed, t)
+  test.AssertResourceExists(rpath, t)
 
   // test finally deleting the resource
   resp = doRequest("DELETE", rpath, "", nil)
-  assertInt(resp.StatusCode, http.StatusNoContent, t)
-  assertResourceDoesNotExist(rpath, t)
+  test.AssertInt(resp.StatusCode, http.StatusNoContent, t)
+  test.AssertResourceDoesNotExist(rpath, t)
 }
 
 func TestPROPFIND(t *testing.T) {
   // test when resource does not exist
   resp := doRequest("PROPFIND", "/foo/bar/", "", nil)
-  assertInt(resp.StatusCode, http.StatusNotFound, t)
+  test.AssertInt(resp.StatusCode, http.StatusNotFound, t)
 
   collection := "/test-data/propfind/"
   rName := "123-456-789.ics"
@@ -222,8 +222,8 @@ func TestPROPFIND(t *testing.T) {
 
   resp = doRequest("PROPFIND", rpath, propfindXML, nil)
   respBody := readResponseBody(resp)
-  assertInt(resp.StatusCode, 207, t)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertInt(resp.StatusCode, 207, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
   // Next test will check for properties that have not been found for the resource
 
@@ -252,8 +252,8 @@ func TestPROPFIND(t *testing.T) {
 
   resp = doRequest("PROPFIND", rpath, propfindXML, nil)
   respBody = readResponseBody(resp)
-  assertInt(resp.StatusCode, 207, t)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertInt(resp.StatusCode, 207, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
   // Next tests will check the Depth feature
 
@@ -288,7 +288,7 @@ func TestPROPFIND(t *testing.T) {
 
   resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
   // test PROPFIND with depth 1
   headers["Depth"] = "1"
@@ -319,12 +319,12 @@ func TestPROPFIND(t *testing.T) {
 
   resp = doRequest("PROPFIND", "/test-data/propfind/", propfindXML, headers)
   respBody = readResponseBody(resp)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
   // the same test as before but without the trailing '/' on the collection's path
   resp = doRequest("PROPFIND", "/test-data/propfind", propfindXML, headers)
   respBody = readResponseBody(resp)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 }
 
 func TestREPORT(t *testing.T) {
@@ -387,7 +387,7 @@ func TestREPORT(t *testing.T) {
 
   resp := doRequest("REPORT", path, reportXML, nil)
   respBody := readResponseBody(resp)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
   // Test 2: when the URL path points to an actual resource and using the same body as before
   path = collection + r1Name
@@ -412,7 +412,7 @@ func TestREPORT(t *testing.T) {
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
   // Test 3: when the URL points to a collection and passing filter rules in the body
   path = collection
@@ -455,7 +455,7 @@ func TestREPORT(t *testing.T) {
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
-  assertMultistatusXML(respBody, expectedRespBody, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
 }
 
 // ================ FUNCS ========================
@@ -497,81 +497,6 @@ func createResource(collection, rName, data string) {
   f, err := os.Create(pwd + collection + rName)
   panicerr(err)
   f.WriteString(data)
-}
-
-// ================= ASSERTIONS ============================
-
-func assertStr(target string, expectation string, t *testing.T) {
-  if target != expectation {
-    t.Error("Expected:", expectation, "| Got:", target, "\n ->", logFailedLine())
-  }
-}
-
-func assertInt(target int, expectation int, t *testing.T) bool {
-  if target != expectation {
-    t.Error("Expected:", expectation, "| Got:", target, "\n ->", logFailedLine())
-    return false
-  }
-
-  return true
-}
-
-func assertResourceDoesNotExist(rpath string, t *testing.T) {
-  pwd, _ := os.Getwd()
-  if _, err := os.Stat(pwd + rpath); !os.IsNotExist(err) {
-    t.Error("Resource", rpath, "exists", "\n ->", logFailedLine())
-  }
-}
-
-func assertResourceExists(rpath string, t *testing.T) {
-  pwd, _ := os.Getwd()
-  _, err := os.Stat(pwd + rpath)
-  if os.IsNotExist(err) {
-    t.Error("Resource", rpath, "does not exist", "\n ->", logFailedLine())
-  } else {
-    panicerr(err)
-  }
-}
-
-func assertResourceData(rpath, expectation string, t *testing.T) {
-  pwd, _ := os.Getwd()
-  data, err := ioutil.ReadFile(pwd + rpath)
-  dataStr := string(data)
-  panicerr(err)
-  if dataStr != expectation {
-    t.Error("Expected:", expectation, "| Got:", dataStr, "\n ->", logFailedLine())
-  }
-}
-
-func assertMultistatusXML(target, expectation string, t *testing.T) {
-  cleanXML := func(xml string) string {
-    cleanupMap := map[string]string{
-      `\r?\n`: "",
-      `>[\s|\t]+<`: "><",
-      `<D:getetag>[^<]+</D:getetag>`: `<D:getetag>?</D:getetag>`,
-      `<CS:getctag>[^<]+</CS:getctag>`: `<CS:getctag>?</CS:getctag>`,
-      `<D:getlastmodified>[^<]+</D:getlastmodified>`: `<D:getlastmodified>?</D:getlastmodified>`,
-    }
-
-    for k, v := range cleanupMap {
-      re := regexp.MustCompile(k)
-      xml = re.ReplaceAllString(xml, v)
-    }
-
-    return strings.TrimSpace(xml)
-  }
-
-  target2 := cleanXML(target)
-  expectation2 := cleanXML(expectation)
-
-  if target2 != expectation2 {
-    t.Error("Expected:", expectation2, "| Got:", target2, "\n ->", logFailedLine())
-  }
-}
-
-func logFailedLine() string {
-  pc, fn, line, _ := runtime.Caller(2)
-  return fmt.Sprintf("Failed in %s[%s:%d]", runtime.FuncForPC(pc).Name(), fn, line)
 }
 
 func panicerr(err error) {
