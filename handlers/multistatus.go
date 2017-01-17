@@ -14,23 +14,39 @@ import (
 // that will serve to build the final XML. Multistatus responses are
 // used by the REPORT and PROPFIND methods.
 type multistatusResp struct {
+  // The set of multistatus responses used to build each of the <DAV:response> nodes.
   Responses []msResponse
-}
-
-func newMultistatusResp() multistatusResp {
-  ms := multistatusResp{}
-  ms.Responses = []msResponse{}
-
-  return ms
+  // Flag that XML should be minimal or not
+  // [defined in the draft https://tools.ietf.org/html/draft-murchison-webdav-prefer-05]
+  Minimal bool
 }
 
 type msResponse struct {
   Href string
   Found bool
-  Propstats map[int][]msPropValue
+  Propstats msPropstats
 }
 
-type msPropValue struct {
+type msPropstats map[int]msProps
+
+// Adds a msProp to the map with the key being the prop status.
+func (stats msPropstats) Add(prop msProp) {
+  stats[prop.Status] = append(stats[prop.Status], prop)
+}
+
+func (stats msPropstats) Clone() msPropstats {
+  clone := make(msPropstats)
+
+  for k, v := range stats {
+    clone[k] = v
+  }
+
+  return clone
+}
+
+type msProps []msProp
+
+type msProp struct {
   Tag      xml.Name
   Content  string
   Contents []string
@@ -42,18 +58,18 @@ type msPropValue struct {
 // resource: the target calendar resource.
 // reqprops: set of required props that must be processed for the resource.
 // ## Returns
-// The set of props (msPropValue) processed. Each prop is mapped to a HTTP status code.
+// The set of props (msProp) processed. Each prop is mapped to a HTTP status code.
 // So if a prop is found and processed ok, it'll be mapped to 200. If it's not found,
 // it'll be mapped to 404, and so on.
-func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Name) map[int][]msPropValue {
+func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Name) msPropstats {
   if resource == nil {
     return nil
   }
 
-  result := make(map[int][]msPropValue)
+  result := make(msPropstats)
 
   for _, ptag := range reqprops {
-    pvalue := msPropValue{
+    pvalue := msProp{
       Tag: ptag,
       Status: http.StatusOK,
     }
@@ -110,14 +126,14 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
       pvalue.Status = http.StatusNotFound
     }
 
-    result[pvalue.Status] = append(result[pvalue.Status], pvalue)
+    result.Add(pvalue)
   }
 
   return result
 }
 
 // Adds a new `msResponse` to the `Responses` array.
-func (ms *multistatusResp) AddResponse(href string, found bool, propstats map[int][]msPropValue) {
+func (ms *multistatusResp) AddResponse(href string, found bool, propstats msPropstats) {
   ms.Responses = append(ms.Responses, msResponse{
     Href: href,
     Found: found,
@@ -137,7 +153,23 @@ func (ms *multistatusResp) ToXML() string {
     bf.Write("<D:href>%s</D:href>", response.Href)
 
     if response.Found {
-      for status, props := range response.Propstats {
+      propstats := response.Propstats.Clone()
+
+      if ms.Minimal {
+        delete(propstats, http.StatusNotFound)
+
+        if len(propstats) == 0 {
+          bf.Write("<D:propstat>")
+          bf.Write("<D:prop/>")
+          bf.Write(ixml.StatusTag(http.StatusOK))
+          bf.Write("</D:propstat>")
+          bf.Write("</D:response>")
+
+          continue
+        }
+      }
+
+      for status, props := range propstats {
         bf.Write("<D:propstat>")
         bf.Write("<D:prop>")
         for _, prop := range props {
@@ -158,10 +190,10 @@ func (ms *multistatusResp) ToXML() string {
   return bf.String()
 }
 
-func (ms *multistatusResp) propToXML(pv msPropValue) string {
-  for _, content := range pv.Contents {
-    pv.Content += content
+func (ms *multistatusResp) propToXML(prop msProp) string {
+  for _, content := range prop.Contents {
+    prop.Content += content
   }
-  xmlString := ixml.Tag(pv.Tag, pv.Content)
+  xmlString := ixml.Tag(prop.Tag, prop.Content)
   return xmlString
 }

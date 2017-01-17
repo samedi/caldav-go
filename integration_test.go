@@ -231,7 +231,7 @@ func TestPROPFIND(t *testing.T) {
   <?xml version="1.0" encoding="utf-8" ?>
   <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
    <D:prop>
-     <C:supported-calendar-component-set/>
+     <unknown-property/>
    </D:prop>
   </D:propfind>
   `
@@ -242,7 +242,7 @@ func TestPROPFIND(t *testing.T) {
       <D:href>/test-data/propfind/123-456-789.ics</D:href>
       <D:propstat>
         <D:prop>
-          <C:supported-calendar-component-set/>
+          <unknown-property/>
         </D:prop>
         <D:status>HTTP/1.1 404 Not Found</D:status>
       </D:propstat>
@@ -255,9 +255,48 @@ func TestPROPFIND(t *testing.T) {
   test.AssertInt(resp.StatusCode, 207, t)
   test.AssertMultistatusXML(respBody, expectedRespBody, t)
 
-  // Next tests will check the Depth feature
+  // Next test will check a request with the `Prefer` header
 
   headers := make(map[string]string)
+  headers["Prefer"] = "return=minimal"
+
+  propfindXML = `
+  <?xml version="1.0" encoding="utf-8" ?>
+  <D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:C="urn:ietf:params:xml:ns:caldav">
+   <D:prop>
+    <D:getetag/>
+    <unknown-property/>
+   </D:prop>
+  </D:propfind>
+  `
+
+  // the response should omit all the <propstat> nodes with status 404.
+  expectedRespBody = fmt.Sprintf(`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/propfind/123-456-789.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>
+  `)
+
+  resp = doRequest("PROPFIND", rpath, propfindXML, headers)
+  respBody = readResponseBody(resp)
+  test.AssertInt(resp.StatusCode, 207, t)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
+  if test.AssertInt(len(resp.Header["Preference-Applied"]), 1, t) {
+    test.AssertStr(resp.Header.Get("Preference-Applied"), "return=minimal", t)
+  }
+
+  // Next tests will check request with the `Depth` header
+
+  headers = make(map[string]string)
 
   propfindXML = `
   <?xml version="1.0" encoding="utf-8" ?>
@@ -456,6 +495,46 @@ func TestREPORT(t *testing.T) {
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)
   test.AssertMultistatusXML(respBody, expectedRespBody, t)
+
+  // Test 4: when making a request with a `Prefer` header
+
+  headers := make(map[string]string)
+  headers["Prefer"] = "return=minimal"
+
+  path = collection
+
+  reportXML = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+    <D:prop>
+      <D:getetag/>
+      <unknown-property/>
+    </D:prop>
+    <D:href>/test-data/report/123-456-789.ics</D:href>
+  </C:calendar-multiget>
+  `
+
+  // the response should omit all the <propstat> nodes with status 404.
+  expectedRespBody = fmt.Sprintf(`
+  <?xml version="1.0" encoding="UTF-8"?>
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+    <D:response>
+      <D:href>/test-data/report/123-456-789.ics</D:href>
+      <D:propstat>
+        <D:prop>
+          <D:getetag>?</D:getetag>
+        </D:prop>
+        <D:status>HTTP/1.1 200 OK</D:status>
+      </D:propstat>
+    </D:response>
+  </D:multistatus>`)
+
+  resp = doRequest("REPORT", path, reportXML, headers)
+  respBody = readResponseBody(resp)
+  test.AssertMultistatusXML(respBody, expectedRespBody, t)
+  if test.AssertInt(len(resp.Header["Preference-Applied"]), 1, t) {
+    test.AssertStr(resp.Header.Get("Preference-Applied"), "return=minimal", t)
+  }
 }
 
 // ================ FUNCS ========================
