@@ -1,8 +1,7 @@
 package: git.samedi.cc/ferraz/caldav
 import:
 - package: github.com/beevik/etree
-  version: ce53c4ce608a92897d74ff8fd47b5a1131e5606c
 - package: github.com/laurent22/ical-go
-  version: 9593ad05ac2f1568bb389c18f7d50f8677425e75
+  version: ~0.1.0
   subpackages:
   - ical

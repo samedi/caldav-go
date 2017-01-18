@@ -1,10 +1,10 @@
-hash: d9f44d2807a48f6d4684207e533f25f7ad7c9fc0b664de38d0b10b29c8a0ae66
-updated: 2016-10-26T10:44:11.203588094+02:00
+hash: 2796726e69757f4af1a13f6ebd056ebc626d712051aa213875bb03f5bdc1ebfd
+updated: 2017-01-18T11:43:23.127761353+01:00
 imports:
 - name: github.com/beevik/etree
-  version: ce53c4ce608a92897d74ff8fd47b5a1131e5606c
+  version: 4cd0dd976db869f817248477718071a28e978df0
 - name: github.com/laurent22/ical-go
-  version: 9593ad05ac2f1568bb389c18f7d50f8677425e75
+  version: 4811ac5553eae5fed7cd5d7a9024727f1311b2a2
   subpackages:
   - ical
 testImports: []
