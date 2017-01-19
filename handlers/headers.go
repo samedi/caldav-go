@@ -13,19 +13,15 @@ const (
 )
 
 type headers struct {
-  hd http.Header
-}
-
-func parseHeaders(req *http.Request) headers {
-  return headers{req.Header}
+  http.Header
 }
 
 func (this headers) IsDeep() bool {
-  depth := this.hd.Get(HD_DEPTH)
+  depth := this.Get(HD_DEPTH)
   return (depth == HD_DEPTH_DEEP)
 }
 
 func (this headers) IsMinimal() bool {
-  prefer := this.hd.Get(HD_PREFER)
+  prefer := this.Get(HD_PREFER)
   return (prefer == HD_PREFER_MINIMAL)
 }

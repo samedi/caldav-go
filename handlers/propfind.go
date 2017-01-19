@@ -13,7 +13,7 @@ type propfindHandler struct {
 
 func (ph propfindHandler) Handle() *Response {
   requestBody := readRequestBody(ph.request)
-  header := parseHeaders(ph.request)
+  header := headers{ph.request.Header}
 
   // get the target resources based on the request URL
   resources, err := global.Storage.GetResources(ph.request.URL.Path, header.IsDeep())

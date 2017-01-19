@@ -18,7 +18,7 @@ type reportHandler struct{
 // See more at RFC4791#section-7.1
 func (rh reportHandler) Handle() *Response {
   requestBody := readRequestBody(rh.request)
-  head := parseHeaders(rh.request)
+  header := headers{rh.request.Header}
 
   urlResource, found, err := global.Storage.GetResource(rh.request.URL.Path)
   if !found {
@@ -49,7 +49,7 @@ func (rh reportHandler) Handle() *Response {
   }
 
   multistatus := &multistatusResp{
-    Minimal: head.IsMinimal(),
+    Minimal: header.IsMinimal(),
   }
   // for each href, build the multistatus responses
   for _, r := range resourcesToReport {
