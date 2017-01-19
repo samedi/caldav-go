@@ -6,7 +6,7 @@ v1.0.0
 
 Main feature:
 
-* Handles the `Prefer` header on PROPFIND and REPORT requests (defined in this [draft/proposal](draft-murchison-webdav-prefer-05)). Useful to shrink down possible big and verbose responses when the client demands. Ex: current iOS calendar client uses this feature on its PROPFIND requests.
+* Handles the `Prefer` header on PROPFIND and REPORT requests (defined in this [draft/proposal](https://tools.ietf.org/html/draft-murchison-webdav-prefer-05)). Useful to shrink down possible big and verbose responses when the client demands. Ex: current iOS calendar client uses this feature on its PROPFIND requests.
 
 Other changes:
 
