@@ -1,5 +1,12 @@
 # CHANGELOG
 
+v1.0.1
+-----------
+2017-01-25  Daniel Ferraz  <d.ferrazm@gmail.com>
+
+Escape the contents in `<calendar-data>` and `<displayname>` in the `multistatus` XML responses. Fixing possible bugs
+related to having special characters (e.g. &) in the XML multistatus responses that would possible break the encoding.
+
 v1.0.0
 -----------
 2017-01-18  Daniel Ferraz  <d.ferrazm@gmail.com>
