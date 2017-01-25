@@ -7,6 +7,7 @@ import (
   "encoding/xml"
 
   "git.samedi.cc/ferraz/caldav/data"
+  "git.samedi.cc/ferraz/caldav/ixml"
   "git.samedi.cc/ferraz/caldav/global"
 )
 
@@ -36,9 +37,9 @@ func (rh reportHandler) Handle() *Response {
   // If it is a `calendar-query`, the resources are calculated based on set of filters in the request.
   var resourcesToReport []reportRes
   switch requestXML.XMLName {
-  case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-multiget"}:
+  case ixml.CALENDAR_MULTIGET_TG:
     resourcesToReport, err = rh.fetchResourcesByList(urlResource, requestXML.Hrefs)
-  case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-query"}:
+  case ixml.CALENDAR_QUERY_TG:
     resourcesToReport, err = rh.fetchResourcesByFilters(urlResource, requestXML.Filters)
   default:
     return rh.response.Set(http.StatusPreconditionFailed, "")

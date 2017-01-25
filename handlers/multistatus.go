@@ -76,51 +76,53 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 
     pfound := false
     switch ptag {
-    case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}:
+    case ixml.CALENDAR_DATA_TG:
       pvalue.Content, pfound = resource.GetContentData()
       if pfound {
         pvalue.Content = ixml.EscapeText(pvalue.Content)
       }
-    case xml.Name{Space: "DAV:", Local: "getetag"}:
+    case ixml.GET_ETAG_TG:
       pvalue.Content, pfound = resource.GetEtag()
-    case xml.Name{Space: "DAV:", Local: "getcontenttype"}:
+    case ixml.GET_CONTENT_TYPE_TG:
       pvalue.Content, pfound = resource.GetContentType()
-    case xml.Name{Space: "DAV:", Local: "getcontentlength"}:
+    case ixml.GET_CONTENT_LENGTH_TG:
       pvalue.Content, pfound = resource.GetContentLength()
-    case xml.Name{Space: "DAV:", Local: "displayname"}:
+    case ixml.DISPLAY_NAME_TG:
       pvalue.Content, pfound = resource.GetDisplayName()
       if pfound {
         pvalue.Content = ixml.EscapeText(pvalue.Content)
       }
-    case xml.Name{Space: "DAV:", Local: "getlastmodified"}:
+    case ixml.GET_LAST_MODIFIED_TG:
       pvalue.Content, pfound = resource.GetLastModified(http.TimeFormat)
-    case xml.Name{Space: "DAV:", Local: "owner"}:
+    case ixml.OWNER_TG:
       pvalue.Content, pfound = resource.GetOwnerPath()
-    case xml.Name{Space: "http://calendarserver.org/ns/", Local: "getctag"}:
+    case ixml.GET_CTAG_TG:
       pvalue.Content, pfound = resource.GetEtag()
-    case xml.Name{Space: "DAV:", Local: "principal-URL"},
-         xml.Name{Space: "DAV:", Local: "principal-collection-set"},
-         xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "calendar-user-address-set"},
-         xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "calendar-home-set"}:
-      pvalue.Content, pfound = fmt.Sprintf("<D:href>%s</D:href>", resource.Path), true
-    case xml.Name{Space: "DAV:", Local: "resourcetype"}:
+    case ixml.PRINCIPAL_URL_TG,
+         ixml.PRINCIPAL_COLLECTION_SET_TG,
+         ixml.CALENDAR_USER_ADDRESS_SET_TG,
+         ixml.CALENDAR_HOME_SET_TG:
+      pvalue.Content, pfound = ixml.HrefTag(resource.Path), true
+    case ixml.RESOURCE_TYPE_TG:
       if resource.IsCollection() {
-        pvalue.Content, pfound = "<D:collection/><C:calendar/>", true
+        pvalue.Content, pfound = ixml.Tag(ixml.COLLECTION_TG, "") + ixml.Tag(ixml.CALENDAR_TG, ""), true
 
         if resource.IsPrincipal() {
-          pvalue.Content += "<D:principal/>"
+          pvalue.Content += ixml.Tag(ixml.PRINCIPAL_TG, "")
         }
       } else {
         // resourcetype must be returned empty for non-collection elements
         pvalue.Content, pfound = "", true
       }
-    case xml.Name{Space: "DAV:", Local: "current-user-principal"}:
+    case ixml.CURRENT_USER_PRINCIPAL_TG:
       if global.User != nil {
-        pvalue.Content, pfound = fmt.Sprintf("<D:href>/%s/</D:href>", global.User.Name), true
+        path := fmt.Sprintf("/%s/", global.User.Name)
+        pvalue.Content, pfound = ixml.HrefTag(path), true
       }
-    case xml.Name{Space: "urn:ietf:params:xml:ns:caldav", Local: "supported-calendar-component-set"}:
+    case ixml.SUPPORTED_CALENDAR_COMPONENT_SET_TG:
       if resource.IsCollection() {
         for _, component := range supportedComponents {
+          // TODO: use ixml somehow to build the below tag
           compTag := fmt.Sprintf(`<C:comp name="%s"/>`, component)
           pvalue.Contents = append(pvalue.Contents, compTag)
         }
@@ -156,7 +158,7 @@ func (ms *multistatusResp) ToXML() string {
   // iterate over event hrefs and build multistatus XML on the fly
   for _, response := range ms.Responses {
     bf.Write("<D:response>")
-    bf.Write("<D:href>%s</D:href>", response.Href)
+    bf.Write(ixml.HrefTag(response.Href))
 
     if response.Found {
       propstats := response.Propstats.Clone()
