@@ -78,6 +78,9 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
     switch ptag {
     case xml.Name{Space:"urn:ietf:params:xml:ns:caldav", Local:"calendar-data"}:
       pvalue.Content, pfound = resource.GetContentData()
+      if pfound {
+        pvalue.Content = ixml.EscapeText(pvalue.Content)
+      }
     case xml.Name{Space: "DAV:", Local: "getetag"}:
       pvalue.Content, pfound = resource.GetEtag()
     case xml.Name{Space: "DAV:", Local: "getcontenttype"}:
@@ -86,6 +89,9 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
       pvalue.Content, pfound = resource.GetContentLength()
     case xml.Name{Space: "DAV:", Local: "displayname"}:
       pvalue.Content, pfound = resource.GetDisplayName()
+      if pfound {
+        pvalue.Content = ixml.EscapeText(pvalue.Content)
+      }
     case xml.Name{Space: "DAV:", Local: "getlastmodified"}:
       pvalue.Content, pfound = resource.GetLastModified(http.TimeFormat)
     case xml.Name{Space: "DAV:", Local: "owner"}:

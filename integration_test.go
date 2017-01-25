@@ -10,6 +10,7 @@ import (
   "io/ioutil"
 
   "git.samedi.cc/ferraz/caldav/test"
+  "git.samedi.cc/ferraz/caldav/ixml"
 )
 
 // ============= TESTS ======================
@@ -422,7 +423,7 @@ func TestREPORT(t *testing.T) {
       <D:status>HTTP/1.1 404 Not Found</D:status>
     </D:response>
   </D:multistatus>
-  `, r1Data, r2Data)
+  `, ixml.EscapeText(r1Data), ixml.EscapeText(r2Data))
 
   resp := doRequest("REPORT", path, reportXML, nil)
   respBody := readResponseBody(resp)
@@ -447,7 +448,7 @@ func TestREPORT(t *testing.T) {
       </D:propstat>
     </D:response>
   </D:multistatus>
-  `, r1Data)
+  `, ixml.EscapeText(r1Data))
 
   resp = doRequest("REPORT", path, reportXML, nil)
   respBody = readResponseBody(resp)

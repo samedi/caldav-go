@@ -2,6 +2,7 @@ package ixml
 
 import (
   "fmt"
+  "bytes"
   "net/http"
   "encoding/xml"
 )
@@ -32,4 +33,11 @@ func Tag(xmlName xml.Name, content string) string {
 func StatusTag(status int) (tag string) {
   tag = fmt.Sprintf("<D:status>HTTP/1.1 %d %s</D:status>", status, http.StatusText(status))
   return
+}
+
+func EscapeText(content string) string {
+  buffer := bytes.NewBufferString("")
+  xml.EscapeText(buffer, []byte(content))
+
+  return buffer.String()
 }
