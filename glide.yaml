@@ -1,0 +1,7 @@
+package: github.com/samedi/caldav-go
+import:
+- package: github.com/beevik/etree
+- package: github.com/laurent22/ical-go
+  version: ~0.1.0
+  subpackages:
+  - ical
