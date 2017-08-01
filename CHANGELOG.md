@@ -1,7 +1,8 @@
 # CHANGELOG
 
-Next release
+v3.0.0
 -----------
+2017-08-01  Daniel Ferraz  <d.ferrazm@gmail.com>
 
 Main change:
 
