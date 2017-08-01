@@ -195,7 +195,7 @@ func (r *Resource) GetOwnerPath() (string, bool) {
   }
 }
 
-// TODO: mnemonic
+// TODO: memoize
 func (r *Resource) icalVEVENT() *ical.Node {
   vevent := r.icalendar().ChildByName(ical.VEVENT)
 
@@ -211,7 +211,7 @@ func (r *Resource) icalVEVENT() *ical.Node {
   return vevent
 }
 
-// TODO: mnemonic
+// TODO: memoize
 func (r *Resource) icalendar() *ical.Node {
   data, found := r.GetContentData()
 

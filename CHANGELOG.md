@@ -12,7 +12,7 @@ v2.0.0
 2017-05-10  Daniel Ferraz  <d.ferrazm@gmail.com>
 
 All commits squashed and LICENSE updated to release as OSS in github.
-Feature-wise remains the same.
+Feature-wise it remains the same.
 
 
 v1.0.1
