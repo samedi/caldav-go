@@ -14,7 +14,7 @@ func (dh deleteHandler) Handle() *Response {
   precond := requestPreconditions{dh.request}
 
   // get the event from the storage
-  resource, _, err := global.Storage.GetResource(dh.request.URL.Path)
+  resource, _, err := global.Storage.GetShallowResource(dh.request.URL.Path)
   if err != nil {
     return dh.response.SetError(err)
   }

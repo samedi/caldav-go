@@ -21,7 +21,7 @@ func (rh reportHandler) Handle() *Response {
   requestBody := readRequestBody(rh.request)
   header := headers{rh.request.Header}
 
-  urlResource, found, err := global.Storage.GetResource(rh.request.URL.Path)
+  urlResource, found, err := global.Storage.GetShallowResource(rh.request.URL.Path)
   if !found {
     return rh.response.Set(http.StatusNotFound, "")
   } else if err != nil {

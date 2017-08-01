@@ -3,6 +3,18 @@
 Next release
 -----------
 
+Main change:
+
+Add two ways to get resource from the storage: shallow or not.
+
+`data.GetShallowResource`: means that, if it's collection resource, it will not include its child VEVENTs in the ICS data.
+This is used throughout the palces where the children dont matter.
+
+`data.GetResource`: means that the child VEVENTs will be included in the returned ICS content data for collection resources.
+This is used then sending a GET request to fetch a specific resource and expecting its full ICS data in response.
+
+Other changes:
+
 * Removed the need to pass the useless `writer http.ResponseWriter` parameter when calling the `caldav.HandleRequest` function.
 * Added a `caldav.HandleRequestWithStorage` function that makes it easy to pass a custom storage to be used and handle the request with a single function call.
 

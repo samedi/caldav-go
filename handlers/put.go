@@ -18,7 +18,7 @@ func (ph putHandler) Handle() *Response {
 
   // check if resource exists
   resourcePath := ph.request.URL.Path
-  resource, found, err := global.Storage.GetResource(resourcePath)
+  resource, found, err := global.Storage.GetShallowResource(resourcePath)
   if err != nil && err != errs.ResourceNotFoundError {
     return ph.response.SetError(err)
   }

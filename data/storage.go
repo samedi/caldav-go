@@ -32,6 +32,10 @@ type Storage interface {
   // GetResource gets the requested resource based on a given `rpath` path. It returns the resource (if found) or
   // nil (if not found). Also returns a flag specifying if the resource was found or not.
   GetResource(rpath string) (*Resource, bool, error)
+  // GetShallowResource has the same behaviour of `storage.GetResource`. The only difference is that, for collection resources,
+  // it does not return its children in the collection `storage.Resource` struct (hence the name shallow). The motive is
+  // for optimizations reasons, as this function is used on places where the collection's children are not important.
+  GetShallowResource(rpath string) (*Resource, bool, error)
   // CreateResource creates a new resource on the `rpath` path with a given `content`.
   CreateResource(rpath, content string) (*Resource, error)
   // UpdateResource udpates a resource on the `rpath` path with a given `content`.
@@ -78,7 +82,7 @@ func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilt
 
   childPaths := fs.getDirectoryChildPaths(rpath)
   for _, path := range childPaths {
-    resource, _, err := fs.GetResource(path)
+    resource, _, err := fs.GetShallowResource(path)
 
     if err != nil {
       // if we can't find this resource, something weird went wrong, but not that serious, so we log it and continue
@@ -99,7 +103,7 @@ func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
   results := []Resource{}
 
   for _, rpath := range rpaths {
-    resource, found, err := fs.GetResource(rpath)
+    resource, found, err := fs.GetShallowResource(rpath)
 
     if err != nil && err != errs.ResourceNotFoundError {
       return nil, err
@@ -114,6 +118,11 @@ func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
 }
 
 func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
+  // For simplicity we just return the shallow resource.
+  return fs.GetShallowResource(rpath)
+}
+
+func (fs *FileStorage) GetShallowResource(rpath string) (*Resource, bool, error) {
   resources, err := fs.GetResources(rpath, false)
 
   if err != nil {
@@ -174,7 +183,7 @@ func (fs *FileStorage) DeleteResource(rpath string) error {
 }
 
 func (fs *FileStorage) isResourcePresent(rpath string) bool {
-  _, found, _ := fs.GetResource(rpath)
+  _, found, _ := fs.GetShallowResource(rpath)
 
   return found
 }

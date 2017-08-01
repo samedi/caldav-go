@@ -89,6 +89,10 @@ func (d *DummyStorage) GetResource(rpath string) (*Resource, bool, error) {
   return nil, false, nil
 }
 
+func (d *DummyStorage) GetShallowResource(rpath string) (*Resource, bool, error) {
+  return nil, false, nil
+}
+
 func (d *DummyStorage) CreateResource(rpath, content string) (*Resource, error) {
   return nil, nil
 }
