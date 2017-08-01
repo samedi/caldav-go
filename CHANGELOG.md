@@ -1,5 +1,12 @@
 # CHANGELOG
 
+Next release
+-----------
+
+* Removed the need to pass the useless `writer http.ResponseWriter` parameter when calling the `caldav.HandleRequest` function.
+* Added a `caldav.HandleRequestWithStorage` function that makes it easy to pass a custom storage to be used and handle the request with a single function call.
+
+
 v2.0.0
 -----------
 2017-05-10  Daniel Ferraz  <d.ferrazm@gmail.com>
