@@ -65,7 +65,7 @@ func myHandler(writer http.ResponseWriter, request *http.Request) {
 
 ### Storage & Resources
 
-The storage is where the caldav resources are stored. To interact with that, the caldav lib needs only a type that conforms with the  `data.StorageInterface` to operate on top of the storage. Basically, this interface defines all the CRUD functions to work on top of the resources. With that, resources can be stored anywhere: in the filesystem, in the cloud, database, etc. As long as the used storage implements all the required storage interface functions, the caldav lib will work fine.
+The storage is where the caldav resources are stored. To interact with that, the caldav lib needs only a type that conforms with the  `data.Storage` interface to operate on top of the storage. Basically, this interface defines all the CRUD functions to work on top of the resources. With that, resources can be stored anywhere: in the filesystem, in the cloud, database, etc. As long as the used storage implements all the required storage interface functions, the caldav lib will work fine.
 
 For example, we could use the following dummy storage implementation:
 
