@@ -1,13 +1,13 @@
 package handlers
 
 import (
-  "net/http"
+	"net/http"
 )
 
 type notImplementedHandler struct {
-  response *Response
+	response *Response
 }
 
 func (h notImplementedHandler) Handle() *Response {
-  return h.response.Set(http.StatusNotImplemented, "")
+	return h.response.Set(http.StatusNotImplemented, "")
 }

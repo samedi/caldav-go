@@ -1,30 +1,30 @@
 package files
 
 import (
-  "strings"
-  "path/filepath"
-  "github.com/samedi/caldav-go/lib"
+	"github.com/samedi/caldav-go/lib"
+	"path/filepath"
+	"strings"
 )
 
 const (
-  Separator = string(filepath.Separator)
+	Separator = string(filepath.Separator)
 )
 
 func AbsPath(path string) string {
-  path = strings.Trim(path, "/")
-  absPath, _ := filepath.Abs(path)
+	path = strings.Trim(path, "/")
+	absPath, _ := filepath.Abs(path)
 
-  return absPath
+	return absPath
 }
 
 func DirPath(path string) string {
-  return filepath.Dir(path)
+	return filepath.Dir(path)
 }
 
 func JoinPaths(paths ...string) string {
-  return filepath.Join(paths...)
+	return filepath.Join(paths...)
 }
 
 func ToSlashPath(path string) string {
-  return lib.ToSlashPath(path)
+	return lib.ToSlashPath(path)
 }

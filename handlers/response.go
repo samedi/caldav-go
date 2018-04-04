@@ -1,65 +1,65 @@
 package handlers
 
 import (
-  "io"
-  "net/http"
-  "github.com/samedi/caldav-go/errs"
+	"github.com/samedi/caldav-go/errs"
+	"io"
+	"net/http"
 )
 
 type Response struct {
-  Status int
-  Header http.Header
-  Body string
-  Error error
+	Status int
+	Header http.Header
+	Body   string
+	Error  error
 }
 
 func NewResponse() *Response {
-  return &Response{
-    Header: make(http.Header),
-  }
+	return &Response{
+		Header: make(http.Header),
+	}
 }
 
 func (this *Response) Set(status int, body string) *Response {
-  this.Status = status
-  this.Body = body
+	this.Status = status
+	this.Body = body
 
-  return this
+	return this
 }
 
 func (this *Response) SetHeader(key, value string) *Response {
-  this.Header.Set(key, value)
+	this.Header.Set(key, value)
 
-  return this
+	return this
 }
 
 func (this *Response) SetError(err error) *Response {
-  this.Error = err
+	this.Error = err
 
-  switch err {
-  case errs.ResourceNotFoundError:
-    this.Status = http.StatusNotFound
-  case errs.UnauthorizedError:
-    this.Status = http.StatusUnauthorized
-  case errs.ForbiddenError:
-    this.Status = http.StatusForbidden
-  default:
-    this.Status = http.StatusInternalServerError
-  }
+	switch err {
+	case errs.ResourceNotFoundError:
+		this.Status = http.StatusNotFound
+	case errs.UnauthorizedError:
+		this.Status = http.StatusUnauthorized
+	case errs.ForbiddenError:
+		this.Status = http.StatusForbidden
+	default:
+		this.Status = http.StatusInternalServerError
+	}
 
-  return this
+	return this
 }
 
 func (this *Response) Write(writer http.ResponseWriter) {
-  if this.Error == errs.UnauthorizedError {
-    this.SetHeader("WWW-Authenticate", `Basic realm="Restricted"`)
-  }
+	if this.Error == errs.UnauthorizedError {
+		this.SetHeader("WWW-Authenticate", `Basic realm="Restricted"`)
+	}
 
-  for key, values := range this.Header {
-    for _, value := range values {
-      writer.Header().Set(key, value)
-    }
-  }
+	for key, values := range this.Header {
+		for _, value := range values {
+			writer.Header().Set(key, value)
+		}
+	}
 
-  writer.WriteHeader(this.Status)
-  io.WriteString(writer, this.Body)
+	writer.WriteHeader(this.Status)
+	io.WriteString(writer, this.Body)
 }

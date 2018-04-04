@@ -1,5 +1,5 @@
 package data
 
 type CalUser struct {
-  Name string
+	Name string
 }
