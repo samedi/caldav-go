@@ -56,7 +56,7 @@ func runServer() {
 }
 
 func myHandler(writer http.ResponseWriter, request *http.Request) {
-  response := caldav.HandleRequest(writer, request)
+  response := caldav.HandleRequest(request)
   // ... do something with the `response` ...
   // the response is written with the current `http.ResponseWriter` and ready to be sent back
   response.Write(writer)
