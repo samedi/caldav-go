@@ -6,13 +6,13 @@ v3.0.0
 
 Main change:
 
-Add two ways to get resource from the storage: shallow or not.
+Add two ways to get resources from the storage: shallow or not.
 
-`data.GetShallowResource`: means that, if it's collection resource, it will not include its child VEVENTs in the ICS data.
-This is used throughout the palces where the children dont matter.
+`data.GetShallowResource`: means that, if it's a collection resource, it will not include its child VEVENTs in the ICS data.
+This is used throughout the palces where children don't matter.
 
 `data.GetResource`: means that the child VEVENTs will be included in the returned ICS content data for collection resources.
-This is used then sending a GET request to fetch a specific resource and expecting its full ICS data in response.
+This is used when sending a GET request to fetch a specific resource and expecting its full ICS data in response.
 
 Other changes:
 
@@ -33,7 +33,7 @@ v1.0.1
 2017-01-25  Daniel Ferraz  <d.ferrazm@gmail.com>
 
 Escape the contents in `<calendar-data>` and `<displayname>` in the `multistatus` XML responses. Fixing possible bugs
-related to having special characters (e.g. &) in the XML multistatus responses that would possible break the encoding.
+related to having special characters (e.g. &) in the XML multistatus responses that would possibly break the encoding.
 
 v1.0.0
 -----------
