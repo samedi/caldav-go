@@ -108,42 +108,11 @@ func (r *Resource) Recurrences() []ResourceRecurrence {
     rrule := vevent.PropString("RRULE", "")
 
     if ( rrule != "" ) {
-        result := []ResourceRecurrence{}
         log.Printf("RECURRENCE : %s, Path: %s", rrule, r.Path )
-        var rex = regexp.MustCompile("(\\w+)=(\\w+)")
-        data := rex.FindAllStringSubmatch(rrule, -1)
-
-        res := make(map[string]string)
-        for _, kv := range data {
-            k := kv[1]
-            v := kv[2]
-            res[k] = v
-        }
-        log.Println(res)
-
-        // TODO Parse rrule
-        // start:
-        // FREQ
-        //   INTERVAL (SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY)
-
-        // cond: 
-        // BYSECOND
-        // BYMINUTE
-        // BYHOUR
-        // BYDAY
-        // BYMONTHDAY
-        // BYYEARDAY
-        // BYWEEKNO
-        // BYMONTH
-        // BYSETPOS
-        // WKST
-
-        // end
-        // COUNT
-        // UNTIL
-
-        // TODO add rdate 
-        // TODO remove exdate
+        start := r.StartTimeUTC()
+        end := r.EndTimeUTC()
+        duration := end.Sub(start)
+        result := r.calcRecurrences( start, duration, rrule )
         return result
 
     } else  {
@@ -277,6 +246,45 @@ func (r *Resource) icalendar() *ical.Node {
 	return icalNode
 }
 
+func (r *Resource) calcRecurrences( start time.Time, duraction time.Duration, rrule string) ([]ResourceRecurrence) {
+    result := []ResourceRecurrence{}
+    var rex = regexp.MustCompile("(\\w+)=(\\w+)")
+    data := rex.FindAllStringSubmatch(rrule, -1)
+
+    res := make(map[string]string)
+    for _, kv := range data {
+        k := kv[1]
+        v := kv[2]
+        res[k] = v
+    }
+    log.Println(res)
+
+    // TODO Parse rrule
+    // start:
+    // FREQ
+    //   INTERVAL (SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY)
+
+    // cond: 
+    // BYSECOND
+    // BYMINUTE
+    // BYHOUR
+    // BYDAY
+    // BYMONTHDAY
+    // BYYEARDAY
+    // BYWEEKNO
+    // BYMONTH
+    // BYSETPOS
+    // WKST
+
+    // end
+    // COUNT
+    // UNTIL
+
+    // TODO add rdate 
+    // TODO remove exdate
+    return result;
+}
+
 type FileResourceAdapter struct {
 	finfo        os.FileInfo
 	resourcePath string
@@ -319,3 +327,6 @@ func (adp *FileResourceAdapter) CalculateEtag() string {
 func (adp *FileResourceAdapter) GetModTime() time.Time {
 	return adp.finfo.ModTime()
 }
+
+
+
