@@ -327,6 +327,25 @@ func TestPropertyParams(t *testing.T) {
 	}
 }
 
+func TestRecurrenceOnce(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+	adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000Z
+  DTEND:20160914T180000Z
+  RRULE: INTERVAL=DAILY;COUNT=1
+  END:VEVENT
+  END:VCALENDAR
+  `
+  if len(res.Recurrences()) != 1 {
+    t.Error("Expected 1 Recurrencies got, ", len(res.Recurrences()))
+  }
+}
+
+
 type FakeResourceAdapter struct {
 	collection  bool
 	etag        string

@@ -246,18 +246,58 @@ func (r *Resource) icalendar() *ical.Node {
 	return icalNode
 }
 
-func (r *Resource) calcRecurrences( start time.Time, duraction time.Duration, rrule string) ([]ResourceRecurrence) {
+func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rrule string) ([]ResourceRecurrence) {
     result := []ResourceRecurrence{}
     var rex = regexp.MustCompile("(\\w+)=(\\w+)")
     data := rex.FindAllStringSubmatch(rrule, -1)
 
-    res := make(map[string]string)
+    params := make(map[string]string)
     for _, kv := range data {
         k := kv[1]
         v := kv[2]
-        res[k] = v
+        params[k] = v
     }
-    log.Println(res)
+    log.Println(params)
+
+    count := 1000;
+    if val, ok := params["COUNT"]; ok {
+        tmp, err := strconv.Atoi(val)
+        if err == nil {
+            count = tmp
+        }
+
+    }
+    var inc time.Duration
+
+    interval := params["INTERVAL"]
+    switch interval {
+        case "SECONDLY":
+            inc,_ = time.ParseDuration("1s")
+        case "MINUTELY":
+            inc,_ = time.ParseDuration("1m")
+        case "HOURLY":
+            inc,_ = time.ParseDuration("1h")
+        case "DAILY":
+            inc,_ = time.ParseDuration("24h")
+        case "WEEKLY":
+            inc,_ = time.ParseDuration("168h")
+        case "MONTHLY":
+            inc,_ = time.ParseDuration("744h")
+        case "YEARLY":
+            inc,_ = time.ParseDuration("8760h")
+        default:
+            return result;
+    }
+
+    c := 0
+    stmp := start
+
+    for  c < count {
+        c += 1
+        stmp = stmp.Add(inc)
+        recurrence := ResourceRecurrence{ stmp, stmp.Add(duration) }
+        result = append(result, recurrence)
+    }
 
     // TODO Parse rrule
     // start:
