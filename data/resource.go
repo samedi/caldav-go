@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+    "regexp"
 
 	"github.com/laurent22/ical-go"
 
@@ -103,8 +104,51 @@ func (r *Resource) EndTimeUTC() time.Time {
 }
 
 func (r *Resource) Recurrences() []ResourceRecurrence {
-	// TODO: Implement. This server does not support ical recurrences yet. We just return an empty array.
-	return []ResourceRecurrence{}
+    vevent := r.icalVEVENT()
+    rrule := vevent.PropString("RRULE", "")
+
+    if ( rrule != "" ) {
+        result := []ResourceRecurrence{}
+        log.Printf("RECURRENCE : %s, Path: %s", rrule, r.Path )
+        var rex = regexp.MustCompile("(\\w+)=(\\w+)")
+        data := rex.FindAllStringSubmatch(rrule, -1)
+
+        res := make(map[string]string)
+        for _, kv := range data {
+            k := kv[1]
+            v := kv[2]
+            res[k] = v
+        }
+        log.Println(res)
+
+        // TODO Parse rrule
+        // start:
+        // FREQ
+        //   INTERVAL (SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY)
+
+        // cond: 
+        // BYSECOND
+        // BYMINUTE
+        // BYHOUR
+        // BYDAY
+        // BYMONTHDAY
+        // BYYEARDAY
+        // BYWEEKNO
+        // BYMONTH
+        // BYSETPOS
+        // WKST
+
+        // end
+        // COUNT
+        // UNTIL
+
+        // TODO add rdate 
+        // TODO remove exdate
+        return result
+
+    } else  {
+	    return []ResourceRecurrence{}
+    }
 }
 
 func (r *Resource) HasProperty(propPath ...string) bool {
