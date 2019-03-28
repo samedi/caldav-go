@@ -248,35 +248,13 @@ func (r *Resource) icalendar() *ical.Node {
 
 func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rrule string) ([]ResourceRecurrence) {
     result := []ResourceRecurrence{}
-    var rex = regexp.MustCompile("(\\w+)=(\\w+)")
-    data := rex.FindAllStringSubmatch(rrule, -1)
+    rule := NewRecurrenceRule(rrule)
 
-    params := make(map[string]string)
-    for _, kv := range data {
-        k := kv[1]
-        v := kv[2]
-        params[k] = v
-    }
-    log.Println(params)
-
-    count := 1000;
-    if val, ok := params["COUNT"]; ok {
-        tmp, err := strconv.Atoi(val)
-        if err == nil {
-            count = tmp
-        }
-    }
-    interval := 1;
-    if val, ok := params["INTERVAL"]; ok {
-        tmp, err := strconv.Atoi(val)
-        if err == nil {
-            interval = tmp
-        }
-    }
-
+    count := rule.getIntParam("COUNT", 1000)
+    interval := rule.getIntParam("INTERVAL", 1)
     var inc time.Duration
 
-    freq := params["FREQ"]
+    freq := rule.getParam("FREQ", "")
     switch freq {
         case "SECONDLY":
             inc,_ = time.ParseDuration("1s")
@@ -297,14 +275,7 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
     }
 
     inc = time.Duration(int64(inc)*int64(interval))
-    until := time.Date(9999,1,1,0,0,0,0,time.UTC)
-    if tmp,ok := params["UNTIL"]; ok {
-        if d,ok2 := time.Parse("20060102T150405Z", tmp);ok2==nil {
-            until = d
-        } else {
-            log.Println("ERR ", ok2)
-        }
-    }
+    until := rule.getTimeParam("UNTIL", time.Date(9999,12,31,23,59,59,00,time.UTC))
     log.Println("UNTIL ", until)
     c := 0
     stmp := start
@@ -344,6 +315,8 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
     // TODO remove exdate
     return result;
 }
+
+
 
 type FileResourceAdapter struct {
 	finfo        os.FileInfo
@@ -389,4 +362,58 @@ func (adp *FileResourceAdapter) GetModTime() time.Time {
 }
 
 
+type RecurrenceRuleInterface interface {
+    GetIntParam(name string, defaultValue int) int
+    GetStringParam(name string, defaultValue string) string
+    GetTimeParam(name string, defaultValue time.Time) time.Time
+}
 
+type RecurrenceRule struct {
+    rrule string
+    params map[string]string
+}
+
+func NewRecurrenceRule(rrule string) RecurrenceRule {
+    var rex = regexp.MustCompile("(\\w+)=(\\w+)")
+    data := rex.FindAllStringSubmatch(rrule, -1)
+
+    p := make(map[string]string)
+    for _, kv := range data {
+        k := kv[1]
+        v := kv[2]
+        p[k] = v
+    }
+    return RecurrenceRule{
+        rrule: rrule,
+        params: p,
+    }
+}
+
+func (r *RecurrenceRule) getIntParam(name string, defaultValue int) int {
+    v := defaultValue
+    if val, ok := r.params[name]; ok {
+        tmp, err := strconv.Atoi(val)
+        if err == nil {
+            v = tmp
+        }
+    }
+    return v
+}
+
+func (r *RecurrenceRule) getParam(name string, defaultValue string) string {
+    v := defaultValue
+    if val, ok := r.params[name]; ok {
+        v = val
+    }
+    return v
+}
+
+func (r *RecurrenceRule) getTimeParam(name string, defaultValue time.Time) time.Time {
+    v := defaultValue
+    if tmp,ok := r.params[name]; ok {
+        if d,ok2 := time.Parse("20060102T150405Z", tmp);ok2==nil {
+            v = d
+        }
+    }
+    return v
+}
