@@ -336,13 +336,39 @@ func TestRecurrenceOnce(t *testing.T) {
   BEGIN:VEVENT
   DTSTART:20160914T170000Z
   DTEND:20160914T180000Z
-  RRULE: INTERVAL=DAILY;COUNT=1
+  RRULE: FREQ=DAILY;COUNT=1
   END:VEVENT
   END:VCALENDAR
   `
   if len(res.Recurrences()) != 1 {
     t.Error("Expected 1 Recurrencies got, ", len(res.Recurrences()))
   }
+
+    if (res.Recurrences()[0].StartTime != time.Date(2016,9,15,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[0].StartTime);
+    }
+}
+
+func TestRecurrenceCountInterval(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+	adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000Z
+  DTEND:20160914T180000Z
+  RRULE: FREQ=DAILY;COUNT=2;INTERVAL=2
+  END:VEVENT
+  END:VCALENDAR
+  `
+  if len(res.Recurrences()) != 2 {
+    t.Error("Expected 2 Recurrencies got, ", len(res.Recurrences()))
+  }
+
+    if (res.Recurrences()[1].StartTime != time.Date(2016,9,18,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[1].StartTime);
+    }
 }
 
 

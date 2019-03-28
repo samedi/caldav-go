@@ -265,12 +265,19 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
         if err == nil {
             count = tmp
         }
-
     }
+    interval := 1;
+    if val, ok := params["INTERVAL"]; ok {
+        tmp, err := strconv.Atoi(val)
+        if err == nil {
+            interval = tmp
+        }
+    }
+
     var inc time.Duration
 
-    interval := params["INTERVAL"]
-    switch interval {
+    freq := params["FREQ"]
+    switch freq {
         case "SECONDLY":
             inc,_ = time.ParseDuration("1s")
         case "MINUTELY":
@@ -288,7 +295,7 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
         default:
             return result;
     }
-
+    inc = time.Duration(int64(inc)*int64(interval))
     c := 0
     stmp := start
 
