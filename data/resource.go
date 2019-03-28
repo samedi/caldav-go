@@ -295,13 +295,26 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
         default:
             return result;
     }
+
     inc = time.Duration(int64(inc)*int64(interval))
+    until := time.Date(9999,1,1,0,0,0,0,time.UTC)
+    if tmp,ok := params["UNTIL"]; ok {
+        if d,ok2 := time.Parse("20060102T150405Z", tmp);ok2==nil {
+            until = d
+        } else {
+            log.Println("ERR ", ok2)
+        }
+    }
+    log.Println("UNTIL ", until)
     c := 0
     stmp := start
 
     for  c < count {
         c += 1
         stmp = stmp.Add(inc)
+        if (!stmp.Before(until)) {
+            break
+        }
         recurrence := ResourceRecurrence{ stmp, stmp.Add(duration) }
         result = append(result, recurrence)
     }
