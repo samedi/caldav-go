@@ -251,38 +251,15 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
     rule := NewRecurrenceRule(rrule)
 
     count := rule.getIntParam("COUNT", 1000)
-    interval := rule.getIntParam("INTERVAL", 1)
-    var inc time.Duration
-
-    freq := rule.getParam("FREQ", "")
-    switch freq {
-        case "SECONDLY":
-            inc,_ = time.ParseDuration("1s")
-        case "MINUTELY":
-            inc,_ = time.ParseDuration("1m")
-        case "HOURLY":
-            inc,_ = time.ParseDuration("1h")
-        case "DAILY":
-            inc,_ = time.ParseDuration("24h")
-        case "WEEKLY":
-            inc,_ = time.ParseDuration("168h")
-        case "MONTHLY":
-            inc,_ = time.ParseDuration("744h")
-        case "YEARLY":
-            inc,_ = time.ParseDuration("8760h")
-        default:
-            return result;
-    }
-
-    inc = time.Duration(int64(inc)*int64(interval))
     until := rule.getTimeParam("UNTIL", time.Date(9999,12,31,23,59,59,00,time.UTC))
+
     log.Println("UNTIL ", until)
     c := 0
     stmp := start
 
     for  c < count {
         c += 1
-        stmp = stmp.Add(inc)
+        stmp = rule.GetNext(stmp)
         if (!stmp.Before(until)) {
             break
         }
@@ -292,9 +269,9 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
 
     // TODO Parse rrule
     // start:
-    // FREQ
-    //   INTERVAL (SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY)
-
+    // FREQ (SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY)
+    // INTERVAL (done)
+    // These can either be filters or set a value directly - if the freq is smaller than the unit it filters otherwise sets to a fixed value
     // cond: 
     // BYSECOND
     // BYMINUTE
@@ -308,15 +285,13 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
     // WKST
 
     // end
-    // COUNT
-    // UNTIL
+    // COUNT (done)
+    // UNTIL (done)
 
     // TODO add rdate 
     // TODO remove exdate
     return result;
 }
-
-
 
 type FileResourceAdapter struct {
 	finfo        os.FileInfo
@@ -416,4 +391,62 @@ func (r *RecurrenceRule) getTimeParam(name string, defaultValue time.Time) time.
         }
     }
     return v
+}
+
+func (r *RecurrenceRule) GetNext(start time.Time) time.Time {
+    interval := r.getIntParam("INTERVAL", 1)
+    var inc time.Duration
+
+    freq := r.getParam("FREQ", "")
+    switch freq {
+        case "SECONDLY":
+            inc,_ = time.ParseDuration("1s")
+            inc = time.Duration(int64(inc)*int64(interval))
+            return start.Add(inc)
+        case "MINUTELY":
+            inc,_ = time.ParseDuration("1m")
+            inc = time.Duration(int64(inc)*int64(interval))
+            return start.Add(inc)
+        case "HOURLY":
+            inc,_ = time.ParseDuration("1h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            return start.Add(inc)
+        case "DAILY":
+            inc,_ = time.ParseDuration("24h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            return start.Add(inc)
+        case "WEEKLY":
+            inc,_ = time.ParseDuration("168h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            return start.Add(inc)
+        case "MONTHLY":
+            year:=start.Year()
+            month:=int(start.Month())-1
+            if  month + interval >= 12 {
+                year = year + 1
+            }
+            month = (month + interval) % 12
+            day:=start.Day()
+            hour:=start.Hour()
+            minute:=start.Minute()
+            second:=start.Second()
+            nanosecond:=start.Nanosecond()
+            return time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
+        case "YEARLY":
+            year:=start.Year()
+            year = year + interval
+
+            month:=start.Month()
+            day:=start.Day()
+            hour:=start.Hour()
+            minute:=start.Minute()
+            second:=start.Second()
+            nanosecond:=start.Nanosecond()
+            return time.Date(year, month, day, hour, minute, second, nanosecond, time.UTC)
+        default:
+            inc,_ = time.ParseDuration("24h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            return start.Add(inc)
+    }
+
 }
