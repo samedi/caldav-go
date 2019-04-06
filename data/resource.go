@@ -256,12 +256,15 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
     log.Println("UNTIL ", until)
     c := 0
     stmp := start
-
+    var skip bool
     for  c < count {
         c += 1
-        stmp = rule.GetNext(stmp)
+        stmp, skip = rule.GetNext(stmp)
         if (!stmp.Before(until)) {
             break
+        }
+        if (skip) {
+            continue
         }
         recurrence := ResourceRecurrence{ stmp, stmp.Add(duration) }
         result = append(result, recurrence)
@@ -375,6 +378,13 @@ func (r *RecurrenceRule) getIntParam(name string, defaultValue int) int {
     return v
 }
 
+func( r *RecurrenceRule) hasParam(name string) bool {
+    if _, ok := r.params[name]; ok {
+        return true;
+    }
+    return false
+}
+
 func (r *RecurrenceRule) getParam(name string, defaultValue string) string {
     v := defaultValue
     if val, ok := r.params[name]; ok {
@@ -393,32 +403,34 @@ func (r *RecurrenceRule) getTimeParam(name string, defaultValue time.Time) time.
     return v
 }
 
-func (r *RecurrenceRule) GetNext(start time.Time) time.Time {
+func (r *RecurrenceRule) GetNext(start time.Time) (time.Time, bool) {
     interval := r.getIntParam("INTERVAL", 1)
     var inc time.Duration
 
     freq := r.getParam("FREQ", "")
+    var res time.Time
+
     switch freq {
         case "SECONDLY":
             inc,_ = time.ParseDuration("1s")
             inc = time.Duration(int64(inc)*int64(interval))
-            return start.Add(inc)
+            res = start.Add(inc)
         case "MINUTELY":
             inc,_ = time.ParseDuration("1m")
             inc = time.Duration(int64(inc)*int64(interval))
-            return start.Add(inc)
+            res = start.Add(inc)
         case "HOURLY":
             inc,_ = time.ParseDuration("1h")
             inc = time.Duration(int64(inc)*int64(interval))
-            return start.Add(inc)
+            res = start.Add(inc)
         case "DAILY":
             inc,_ = time.ParseDuration("24h")
             inc = time.Duration(int64(inc)*int64(interval))
-            return start.Add(inc)
+            res = start.Add(inc)
         case "WEEKLY":
             inc,_ = time.ParseDuration("168h")
             inc = time.Duration(int64(inc)*int64(interval))
-            return start.Add(inc)
+            res = start.Add(inc)
         case "MONTHLY":
             year:=start.Year()
             month:=int(start.Month())-1
@@ -431,7 +443,7 @@ func (r *RecurrenceRule) GetNext(start time.Time) time.Time {
             minute:=start.Minute()
             second:=start.Second()
             nanosecond:=start.Nanosecond()
-            return time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
+            res = time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
         case "YEARLY":
             year:=start.Year()
             year = year + interval
@@ -442,11 +454,65 @@ func (r *RecurrenceRule) GetNext(start time.Time) time.Time {
             minute:=start.Minute()
             second:=start.Second()
             nanosecond:=start.Nanosecond()
-            return time.Date(year, month, day, hour, minute, second, nanosecond, time.UTC)
+            res = time.Date(year, month, day, hour, minute, second, nanosecond, time.UTC)
         default:
             inc,_ = time.ParseDuration("24h")
             inc = time.Duration(int64(inc)*int64(interval))
-            return start.Add(inc)
+            res = start.Add(inc)
     }
+    return r.replaceBy(res), r.skipBy(res)
+}
 
+func (r *RecurrenceRule) freqToInt(freq string) int {
+    switch freq {
+        case "SECONDLY":
+            return 0
+        case "MINUTELY":
+            return 1
+        case "HOURLY":
+            return 2
+        case "DAILY":
+            return 3
+        case "WEEKLY":
+            return 4
+        case "MONTHLY":
+            return 5
+        case "YEARLY":
+            return 6
+        default:
+            return 6
+    }
+}
+
+func (r *RecurrenceRule) replaceBy(t time.Time) time.Time {
+    year:=t.Year()
+    month:=int(t.Month())-1
+    fint := r.freqToInt(r.getParam("FREQ", ""))
+    if (fint > 5 && r.hasParam("BYMONTH")) {
+        month = r.getIntParam("BYMONTH", 0)-1
+    }
+    day:=t.Day()
+    if (fint > 4 && r.hasParam("BYMONTHDAY")) {
+        day = r.getIntParam("BYMONTHDAY", 0)
+    }
+    hour:=t.Hour()
+    if (fint > 3 && r.hasParam("BYHOUR")) {
+        hour = r.getIntParam("BYHOUR", 0)
+    }
+    minute:=t.Minute()
+    if (fint > 2 && r.hasParam("BYMINUTE")) {
+        minute = r.getIntParam("BYMINUTE", 0)
+    }
+    second:=t.Second()
+    if (fint > 1 && r.hasParam("BYSECOND")) {
+        second = r.getIntParam("BYSECOND", 0)
+    }
+    nanosecond:=t.Nanosecond()
+
+    t = time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
+    return t;
+}
+
+func (r *RecurrenceRule) skipBy(t time.Time) bool {
+    return false
 }
