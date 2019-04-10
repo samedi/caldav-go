@@ -460,6 +460,101 @@ func TestByWeekday(t *testing.T) {
     }
 }
 
+func TestByWeekdayNum(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=WEEKLY;BYDAY=1;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,1,28,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayPos(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=MONTHLY;BYDAY=2MO;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+
+    fmt.Println(res.Recurrences())
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,4,8,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayPosParam(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=MONTHLY;BYDAY=MO;BYPOS=2;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+
+    fmt.Println(res.Recurrences())
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,4,8,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayPosNeg(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=MONTHLY;BYDAY=-1MO;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+
+    fmt.Println(res.Recurrences())
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,4,29,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+
 
 
 type FakeResourceAdapter struct {

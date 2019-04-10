@@ -253,7 +253,7 @@ func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rru
     count := rule.getIntParam("COUNT", 1000)
     until := rule.getTimeParam("UNTIL", time.Date(9999,12,31,23,59,59,00,time.UTC))
 
-    log.Println("UNTIL ", until)
+    //log.Println("UNTIL ", until)
     c := 0
     stmp := start
     var skip bool
@@ -352,7 +352,7 @@ type RecurrenceRule struct {
 }
 
 func NewRecurrenceRule(rrule string) RecurrenceRule {
-    var rex = regexp.MustCompile("(\\w+)=(\\w+)")
+    var rex = regexp.MustCompile("(\\w+)=([a-zA-Z0-9-]+)")
     data := rex.FindAllStringSubmatch(rrule, -1)
 
     p := make(map[string]string)
@@ -361,6 +361,7 @@ func NewRecurrenceRule(rrule string) RecurrenceRule {
         v := kv[2]
         p[k] = v
     }
+
     return RecurrenceRule{
         rrule: rrule,
         params: p,
@@ -492,7 +493,7 @@ func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
     // TODO BYSETPOS
     fint := r.freqToInt(r.getParam("FREQ", ""))
     t := start
-    if (fint > 3 && r.hasParam("BYDAY")) {
+    if (fint == 4 && r.hasParam("BYDAY")) { // Weekly
         w1 := int(t.Weekday())
         w2 := r.parseWeekday(r.getParam("BYDAY", ""))
         wdiff := w2-w1
@@ -514,6 +515,47 @@ func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
     if (fint > 4 && r.hasParam("BYMONTHDAY")) {
         day = r.getIntParam("BYMONTHDAY", 0)
     }
+    if (fint == 5 && r.hasParam("BYDAY")) { // Monthly
+        byday := r.getParam("BYDAY", "")
+        d:=0
+        pos:= r.getIntParam("BYPOS", 1)
+        if (len(byday) <= 2) {
+            d = r.parseWeekday(byday)
+        } else {
+            d = r.parseWeekday(byday[len(byday)-1:])
+            tmp,err:=strconv.Atoi(byday[:len(byday)-2])
+            if err == nil {
+                pos = tmp
+            }
+        }
+        if pos > 0 {
+            first := time.Date(year, time.Month(month+1), 1, 0, 0, 0, 0, time.UTC)
+
+            w1 := int(first.Weekday())
+            wdiff := d - w1;
+            if wdiff < 0 {
+                wdiff+=7
+            }
+            day = 1+ wdiff + 7*(pos-1)
+        } else {
+            yofs := 0
+            if  month == 11 {
+                yofs = 1 // handle december
+            }
+            first := time.Date(year+yofs, time.Month(month+2), 1, 0, 0, 0, 0, time.UTC)
+
+            w1 := int(first.Weekday())
+            wdiff := d - w1;
+            if wdiff < 0 {
+                wdiff+=7
+            }
+            wdiff += pos * 7
+            inc,_ := time.ParseDuration("24h")
+            inc = time.Duration(int64(inc)*int64(wdiff))
+            day = first.Add(inc).Day()
+        }
+    }
+
     // TODO BYWEEKNO
     hour:=t.Hour()
     if (fint > 3 && r.hasParam("BYHOUR")) {
@@ -534,6 +576,11 @@ func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
 }
 
 func (r *RecurrenceRule) parseWeekday(day string) int {
+    i, err := strconv.Atoi(day)
+    if err == nil {
+        return i
+    }
+
     switch day {
         case "SO":
             return 0
