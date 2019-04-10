@@ -485,16 +485,24 @@ func (r *RecurrenceRule) freqToInt(freq string) int {
 }
 
 func (r *RecurrenceRule) replaceBy(t time.Time) time.Time {
+    // TODO WKST
+    // TODO LISTS of by values
+    // TODO BYEASTER
+    // TODO BYWEEKDAY
+    // TODO BYSETPOS
     year:=t.Year()
     month:=int(t.Month())-1
     fint := r.freqToInt(r.getParam("FREQ", ""))
     if (fint > 5 && r.hasParam("BYMONTH")) {
         month = r.getIntParam("BYMONTH", 0)-1
     }
+    // TODO BYYEARDAY
     day:=t.Day()
     if (fint > 4 && r.hasParam("BYMONTHDAY")) {
         day = r.getIntParam("BYMONTHDAY", 0)
     }
+    // TODO BYWEEKNO
+    // TODO BYWEEKDAY
     hour:=t.Hour()
     if (fint > 3 && r.hasParam("BYHOUR")) {
         hour = r.getIntParam("BYHOUR", 0)
