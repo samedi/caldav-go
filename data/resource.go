@@ -484,25 +484,37 @@ func (r *RecurrenceRule) freqToInt(freq string) int {
     }
 }
 
-func (r *RecurrenceRule) replaceBy(t time.Time) time.Time {
+func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
     // TODO WKST
     // TODO LISTS of by values
     // TODO BYEASTER
-    // TODO BYWEEKDAY
+    // TODO BYDAY
     // TODO BYSETPOS
+    fint := r.freqToInt(r.getParam("FREQ", ""))
+    t := start
+    if (fint > 3 && r.hasParam("BYDAY")) {
+        w1 := int(t.Weekday())
+        w2 := r.parseWeekday(r.getParam("BYDAY", ""))
+        wdiff := w2-w1
+        if wdiff < 0 {
+            wdiff += 7
+        }
+        inc,_ := time.ParseDuration("24h")
+        inc = time.Duration(int64(inc)*int64(wdiff))
+        t = start.Add(inc)
+    }
+
     year:=t.Year()
     month:=int(t.Month())-1
-    fint := r.freqToInt(r.getParam("FREQ", ""))
     if (fint > 5 && r.hasParam("BYMONTH")) {
         month = r.getIntParam("BYMONTH", 0)-1
     }
-    // TODO BYYEARDAY
     day:=t.Day()
+    // TODO BYYEARDAY
     if (fint > 4 && r.hasParam("BYMONTHDAY")) {
         day = r.getIntParam("BYMONTHDAY", 0)
     }
     // TODO BYWEEKNO
-    // TODO BYWEEKDAY
     hour:=t.Hour()
     if (fint > 3 && r.hasParam("BYHOUR")) {
         hour = r.getIntParam("BYHOUR", 0)
@@ -519,6 +531,27 @@ func (r *RecurrenceRule) replaceBy(t time.Time) time.Time {
 
     t = time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
     return t;
+}
+
+func (r *RecurrenceRule) parseWeekday(day string) int {
+    switch day {
+        case "SO":
+            return 0
+        case "MO":
+            return 1
+        case "TU":
+            return 2
+        case "WE":
+            return 3
+        case "TH":
+            return 4
+        case "FR":
+            return 5
+        case "SA":
+            return 6
+        default:
+            return 1
+    }
 }
 
 func (r *RecurrenceRule) skipBy(t time.Time) bool {
