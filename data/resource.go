@@ -464,33 +464,11 @@ func (r *RecurrenceRule) GetNext(start time.Time) (time.Time, bool) {
     return r.replaceBy(res), r.skipBy(res)
 }
 
-func (r *RecurrenceRule) freqToInt(freq string) int {
-    switch freq {
-        case "SECONDLY":
-            return 0
-        case "MINUTELY":
-            return 1
-        case "HOURLY":
-            return 2
-        case "DAILY":
-            return 3
-        case "WEEKLY":
-            return 4
-        case "MONTHLY":
-            return 5
-        case "YEARLY":
-            return 6
-        default:
-            return 6
-    }
-}
-
 func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
     // TODO WKST
     // TODO LISTS of by values
     // TODO BYEASTER
-    // TODO BYDAY
-    // TODO BYSETPOS
+    // TODO BYWEEKNO
     fint := r.freqToInt(r.getParam("FREQ", ""))
     t := start
     if (fint == 4 && r.hasParam("BYDAY")) { // Weekly
@@ -511,7 +489,16 @@ func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
         month = r.getIntParam("BYMONTH", 0)-1
     }
     day:=t.Day()
-    // TODO BYYEARDAY
+    if (fint == 6 && r.hasParam("BYYEARDAY")) {
+        first := time.Date(year, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+        inc,_ := time.ParseDuration("24h")
+        days := r.getIntParam("BYYEARDAY",0)
+        inc = time.Duration(int64(inc)*int64(days))
+        tmp := first.Add(inc)
+        day = tmp.Day()
+        month =int(tmp.Month())-1
+    }
+
     if (fint > 4 && r.hasParam("BYMONTHDAY")) {
         day = r.getIntParam("BYMONTHDAY", 0)
     }
@@ -556,7 +543,6 @@ func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
         }
     }
 
-    // TODO BYWEEKNO
     hour:=t.Hour()
     if (fint > 3 && r.hasParam("BYHOUR")) {
         hour = r.getIntParam("BYHOUR", 0)
@@ -573,6 +559,27 @@ func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
 
     t = time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
     return t;
+}
+
+func (r *RecurrenceRule) freqToInt(freq string) int {
+    switch freq {
+        case "SECONDLY":
+            return 0
+        case "MINUTELY":
+            return 1
+        case "HOURLY":
+            return 2
+        case "DAILY":
+            return 3
+        case "WEEKLY":
+            return 4
+        case "MONTHLY":
+            return 5
+        case "YEARLY":
+            return 6
+        default:
+            return 6
+    }
 }
 
 func (r *RecurrenceRule) parseWeekday(day string) int {
@@ -602,5 +609,28 @@ func (r *RecurrenceRule) parseWeekday(day string) int {
 }
 
 func (r *RecurrenceRule) skipBy(t time.Time) bool {
+    fint := r.freqToInt(r.getParam("FREQ", ""))
+    month:=int(t.Month())
+    hour:=t.Hour()
+    minute:=t.Minute()
+    second:=t.Second()
+
+    if (fint <= 5 && r.hasParam("BYMONTH")) {
+        return r.getIntParam("BYMONTH",1) != month;
+    }
+    if (fint <= 3 && r.hasParam("BYDAY")) {
+        d1 := int(t.Weekday())
+        d2 := r.parseWeekday( r.getParam("BYDAY",""))
+        return d1 != d2
+    }
+    if (fint <= 2 && r.hasParam("BYHOUR")) {
+        return r.getIntParam("BYHOUR",0) != hour
+    }
+    if (fint <= 1 && r.hasParam("BYMINUTE")) {
+        return r.getIntParam("BYMINUTE",0) != minute
+    }
+    if (fint == 0 && r.hasParam("BYSECOND")) {
+        return r.getIntParam("BYSECOND",0) != second
+    }
     return false
 }
