@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+    "regexp"
 
 	"github.com/laurent22/ical-go"
 
@@ -103,8 +104,20 @@ func (r *Resource) EndTimeUTC() time.Time {
 }
 
 func (r *Resource) Recurrences() []ResourceRecurrence {
-	// TODO: Implement. This server does not support ical recurrences yet. We just return an empty array.
-	return []ResourceRecurrence{}
+    vevent := r.icalVEVENT()
+    rrule := vevent.PropString("RRULE", "")
+
+    if ( rrule != "" ) {
+        log.Printf("RECURRENCE : %s, Path: %s", rrule, r.Path )
+        start := r.StartTimeUTC()
+        end := r.EndTimeUTC()
+        duration := end.Sub(start)
+        result := r.calcRecurrences( start, duration, rrule )
+        return result
+
+    } else  {
+	    return []ResourceRecurrence{}
+    }
 }
 
 func (r *Resource) HasProperty(propPath ...string) bool {
@@ -233,6 +246,56 @@ func (r *Resource) icalendar() *ical.Node {
 	return icalNode
 }
 
+func (r *Resource) calcRecurrences( start time.Time, duration time.Duration, rrule string) ([]ResourceRecurrence) {
+    result := []ResourceRecurrence{}
+    rule := NewRecurrenceRule(rrule)
+
+    count := rule.getIntParam("COUNT", 1000)
+    until := rule.getTimeParam("UNTIL", time.Date(9999,12,31,23,59,59,00,time.UTC))
+
+    //log.Println("UNTIL ", until)
+    c := 0
+    stmp := start
+    var skip bool
+    for  c < count {
+        c += 1
+        stmp, skip = rule.GetNext(stmp)
+        if (!stmp.Before(until)) {
+            break
+        }
+        if (skip) {
+            continue
+        }
+        recurrence := ResourceRecurrence{ stmp, stmp.Add(duration) }
+        result = append(result, recurrence)
+    }
+
+    // TODO Parse rrule
+    // start:
+    // FREQ (SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY)
+    // INTERVAL (done)
+    // These can either be filters or set a value directly - if the freq is smaller than the unit it filters otherwise sets to a fixed value
+    // cond: 
+    // BYSECOND
+    // BYMINUTE
+    // BYHOUR
+    // BYDAY
+    // BYMONTHDAY
+    // BYYEARDAY
+    // BYWEEKNO
+    // BYMONTH
+    // BYSETPOS
+    // WKST
+
+    // end
+    // COUNT (done)
+    // UNTIL (done)
+
+    // TODO add rdate 
+    // TODO remove exdate
+    return result;
+}
+
 type FileResourceAdapter struct {
 	finfo        os.FileInfo
 	resourcePath string
@@ -274,4 +337,300 @@ func (adp *FileResourceAdapter) CalculateEtag() string {
 
 func (adp *FileResourceAdapter) GetModTime() time.Time {
 	return adp.finfo.ModTime()
+}
+
+
+type RecurrenceRuleInterface interface {
+    GetIntParam(name string, defaultValue int) int
+    GetStringParam(name string, defaultValue string) string
+    GetTimeParam(name string, defaultValue time.Time) time.Time
+}
+
+type RecurrenceRule struct {
+    rrule string
+    params map[string]string
+}
+
+func NewRecurrenceRule(rrule string) RecurrenceRule {
+    var rex = regexp.MustCompile("(\\w+)=([a-zA-Z0-9-]+)")
+    data := rex.FindAllStringSubmatch(rrule, -1)
+
+    p := make(map[string]string)
+    for _, kv := range data {
+        k := kv[1]
+        v := kv[2]
+        p[k] = v
+    }
+
+    return RecurrenceRule{
+        rrule: rrule,
+        params: p,
+    }
+}
+
+func (r *RecurrenceRule) getIntParam(name string, defaultValue int) int {
+    v := defaultValue
+    if val, ok := r.params[name]; ok {
+        tmp, err := strconv.Atoi(val)
+        if err == nil {
+            v = tmp
+        }
+    }
+    return v
+}
+
+func( r *RecurrenceRule) hasParam(name string) bool {
+    if _, ok := r.params[name]; ok {
+        return true;
+    }
+    return false
+}
+
+func (r *RecurrenceRule) getParam(name string, defaultValue string) string {
+    v := defaultValue
+    if val, ok := r.params[name]; ok {
+        v = val
+    }
+    return v
+}
+
+func (r *RecurrenceRule) getTimeParam(name string, defaultValue time.Time) time.Time {
+    v := defaultValue
+    if tmp,ok := r.params[name]; ok {
+        if d,ok2 := time.Parse("20060102T150405Z", tmp);ok2==nil {
+            v = d
+        }
+    }
+    return v
+}
+
+func (r *RecurrenceRule) GetNext(start time.Time) (time.Time, bool) {
+    interval := r.getIntParam("INTERVAL", 1)
+    var inc time.Duration
+
+    freq := r.getParam("FREQ", "")
+    var res time.Time
+
+    switch freq {
+        case "SECONDLY":
+            inc,_ = time.ParseDuration("1s")
+            inc = time.Duration(int64(inc)*int64(interval))
+            res = start.Add(inc)
+        case "MINUTELY":
+            inc,_ = time.ParseDuration("1m")
+            inc = time.Duration(int64(inc)*int64(interval))
+            res = start.Add(inc)
+        case "HOURLY":
+            inc,_ = time.ParseDuration("1h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            res = start.Add(inc)
+        case "DAILY":
+            inc,_ = time.ParseDuration("24h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            res = start.Add(inc)
+        case "WEEKLY":
+            inc,_ = time.ParseDuration("168h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            res = start.Add(inc)
+        case "MONTHLY":
+            year:=start.Year()
+            month:=int(start.Month())-1
+            if  month + interval >= 12 {
+                year = year + 1
+            }
+            month = (month + interval) % 12
+            day:=start.Day()
+            hour:=start.Hour()
+            minute:=start.Minute()
+            second:=start.Second()
+            nanosecond:=start.Nanosecond()
+            res = time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
+        case "YEARLY":
+            year:=start.Year()
+            year = year + interval
+
+            month:=start.Month()
+            day:=start.Day()
+            hour:=start.Hour()
+            minute:=start.Minute()
+            second:=start.Second()
+            nanosecond:=start.Nanosecond()
+            res = time.Date(year, month, day, hour, minute, second, nanosecond, time.UTC)
+        default:
+            inc,_ = time.ParseDuration("24h")
+            inc = time.Duration(int64(inc)*int64(interval))
+            res = start.Add(inc)
+    }
+    return r.replaceBy(res), r.skipBy(res)
+}
+
+func (r *RecurrenceRule) replaceBy(start time.Time) time.Time {
+    // TODO WKST
+    // TODO LISTS of by values
+    // TODO BYEASTER
+    // TODO BYWEEKNO
+    fint := r.freqToInt(r.getParam("FREQ", ""))
+    t := start
+    if (fint == 4 && r.hasParam("BYDAY")) { // Weekly
+        w1 := int(t.Weekday())
+        w2 := r.parseWeekday(r.getParam("BYDAY", ""))
+        wdiff := w2-w1
+        if wdiff < 0 {
+            wdiff += 7
+        }
+        inc,_ := time.ParseDuration("24h")
+        inc = time.Duration(int64(inc)*int64(wdiff))
+        t = start.Add(inc)
+    }
+
+    year:=t.Year()
+    month:=int(t.Month())-1
+    if (fint > 5 && r.hasParam("BYMONTH")) {
+        month = r.getIntParam("BYMONTH", 0)-1
+    }
+    day:=t.Day()
+    if (fint == 6 && r.hasParam("BYYEARDAY")) {
+        first := time.Date(year, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+        inc,_ := time.ParseDuration("24h")
+        days := r.getIntParam("BYYEARDAY",0)
+        inc = time.Duration(int64(inc)*int64(days))
+        tmp := first.Add(inc)
+        day = tmp.Day()
+        month =int(tmp.Month())-1
+    }
+
+    if (fint > 4 && r.hasParam("BYMONTHDAY")) {
+        day = r.getIntParam("BYMONTHDAY", 0)
+    }
+    if (fint == 5 && r.hasParam("BYDAY")) { // Monthly
+        byday := r.getParam("BYDAY", "")
+        d:=0
+        pos:= r.getIntParam("BYPOS", 1)
+        if (len(byday) <= 2) {
+            d = r.parseWeekday(byday)
+        } else {
+            d = r.parseWeekday(byday[len(byday)-1:])
+            tmp,err:=strconv.Atoi(byday[:len(byday)-2])
+            if err == nil {
+                pos = tmp
+            }
+        }
+        if pos > 0 {
+            first := time.Date(year, time.Month(month+1), 1, 0, 0, 0, 0, time.UTC)
+
+            w1 := int(first.Weekday())
+            wdiff := d - w1;
+            if wdiff < 0 {
+                wdiff+=7
+            }
+            day = 1+ wdiff + 7*(pos-1)
+        } else {
+            yofs := 0
+            if  month == 11 {
+                yofs = 1 // handle december
+            }
+            first := time.Date(year+yofs, time.Month(month+2), 1, 0, 0, 0, 0, time.UTC)
+
+            w1 := int(first.Weekday())
+            wdiff := d - w1;
+            if wdiff < 0 {
+                wdiff+=7
+            }
+            wdiff += pos * 7
+            inc,_ := time.ParseDuration("24h")
+            inc = time.Duration(int64(inc)*int64(wdiff))
+            day = first.Add(inc).Day()
+        }
+    }
+
+    hour:=t.Hour()
+    if (fint > 3 && r.hasParam("BYHOUR")) {
+        hour = r.getIntParam("BYHOUR", 0)
+    }
+    minute:=t.Minute()
+    if (fint > 2 && r.hasParam("BYMINUTE")) {
+        minute = r.getIntParam("BYMINUTE", 0)
+    }
+    second:=t.Second()
+    if (fint > 1 && r.hasParam("BYSECOND")) {
+        second = r.getIntParam("BYSECOND", 0)
+    }
+    nanosecond:=t.Nanosecond()
+
+    t = time.Date(year, time.Month(month+1), day, hour, minute, second, nanosecond, time.UTC)
+    return t;
+}
+
+func (r *RecurrenceRule) freqToInt(freq string) int {
+    switch freq {
+        case "SECONDLY":
+            return 0
+        case "MINUTELY":
+            return 1
+        case "HOURLY":
+            return 2
+        case "DAILY":
+            return 3
+        case "WEEKLY":
+            return 4
+        case "MONTHLY":
+            return 5
+        case "YEARLY":
+            return 6
+        default:
+            return 6
+    }
+}
+
+func (r *RecurrenceRule) parseWeekday(day string) int {
+    i, err := strconv.Atoi(day)
+    if err == nil {
+        return i
+    }
+
+    switch day {
+        case "SO":
+            return 0
+        case "MO":
+            return 1
+        case "TU":
+            return 2
+        case "WE":
+            return 3
+        case "TH":
+            return 4
+        case "FR":
+            return 5
+        case "SA":
+            return 6
+        default:
+            return 1
+    }
+}
+
+func (r *RecurrenceRule) skipBy(t time.Time) bool {
+    fint := r.freqToInt(r.getParam("FREQ", ""))
+    month:=int(t.Month())
+    hour:=t.Hour()
+    minute:=t.Minute()
+    second:=t.Second()
+
+    if (fint <= 5 && r.hasParam("BYMONTH")) {
+        return r.getIntParam("BYMONTH",1) != month;
+    }
+    if (fint <= 3 && r.hasParam("BYDAY")) {
+        d1 := int(t.Weekday())
+        d2 := r.parseWeekday( r.getParam("BYDAY",""))
+        return d1 != d2
+    }
+    if (fint <= 2 && r.hasParam("BYHOUR")) {
+        return r.getIntParam("BYHOUR",0) != hour
+    }
+    if (fint <= 1 && r.hasParam("BYMINUTE")) {
+        return r.getIntParam("BYMINUTE",0) != minute
+    }
+    if (fint == 0 && r.hasParam("BYSECOND")) {
+        return r.getIntParam("BYSECOND",0) != second
+    }
+    return false
 }
