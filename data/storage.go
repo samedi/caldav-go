@@ -8,7 +8,11 @@ import (
 	"os"
 )
 
-// The Storage is the responsible for the CRUD operations on the caldav resources.
+// Storage is the inteface responsible for the CRUD operations on the CalDAV resources. It represents
+// where the resources should be fetched from and the various operations which can be performed on it.
+// This is the interface one should implement in case it needs a custom storage strategy, like fetching
+// data from the cloud, local DB, etc. After that, the custom storage implementation can be setup to be used
+// in the server by passing the object instance to `caldav.SetupStorage`.
 type Storage interface {
 	// GetResources gets a list of resources based on a given `rpath`. The
 	// `rpath` is the path to the original resource that's being requested. The resultant list
@@ -45,11 +49,12 @@ type Storage interface {
 }
 
 // FileStorage is the storage that deals with resources as files in the file system. So, a collection resource
-// is treated as a folder/directory and its children resources are the files it contains. On the other hand, non-collection
-// resources are just plain files.
+// is treated as a folder/directory and its children resources are the files it contains. Non-collection resources are just plain files.
+// Each file represents then a CalAV resource and the data expects to contain the iCal data to feed the calendar events.
 type FileStorage struct {
 }
 
+// GetResources get the file resources based on the `rpath`. See `Storage.GetResources` doc.
 func (fs *FileStorage) GetResources(rpath string, withChildren bool) ([]Resource, error) {
 	result := []Resource{}
 
@@ -77,6 +82,7 @@ func (fs *FileStorage) GetResources(rpath string, withChildren bool) ([]Resource
 	return result, nil
 }
 
+// GetResourcesByFilters get the file resources based on the `rpath` and a set of filters. See `Storage.GetResourcesByFilters` doc.
 func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilter) ([]Resource, error) {
 	result := []Resource{}
 
@@ -99,6 +105,7 @@ func (fs *FileStorage) GetResourcesByFilters(rpath string, filters *ResourceFilt
 	return result, nil
 }
 
+// GetResourcesByList get a list of file resources based on a list of `rpaths`. See `Storage.GetResourcesByList` doc.
 func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
 	results := []Resource{}
 
@@ -117,11 +124,13 @@ func (fs *FileStorage) GetResourcesByList(rpaths []string) ([]Resource, error) {
 	return results, nil
 }
 
+// GetResource fetches and returns a single resource for a `rpath`. See `Storage.GetResoure` doc.
 func (fs *FileStorage) GetResource(rpath string) (*Resource, bool, error) {
 	// For simplicity we just return the shallow resource.
 	return fs.GetShallowResource(rpath)
 }
 
+// GetShallowResource fetches and returns a single resource file/directory without any related children. See `Storage.GetShallowResource` doc.
 func (fs *FileStorage) GetShallowResource(rpath string) (*Resource, bool, error) {
 	resources, err := fs.GetResources(rpath, false)
 
@@ -137,6 +146,7 @@ func (fs *FileStorage) GetShallowResource(rpath string) (*Resource, bool, error)
 	return &res, true, nil
 }
 
+// CreateResource creates a file resource with the provided `content`. See `Storage.CreateResource` doc.
 func (fs *FileStorage) CreateResource(rpath, content string) (*Resource, error) {
 	rAbsPath := files.AbsPath(rpath)
 
@@ -161,6 +171,7 @@ func (fs *FileStorage) CreateResource(rpath, content string) (*Resource, error) 
 	return &res, nil
 }
 
+// UpdateResource updates a file resource with the provided `content`. See `Storage.UpdateResource` doc.
 func (fs *FileStorage) UpdateResource(rpath, content string) (*Resource, error) {
 	f, e := fs.openResourceFile(rpath, os.O_RDWR)
 	if e != nil {
@@ -176,6 +187,7 @@ func (fs *FileStorage) UpdateResource(rpath, content string) (*Resource, error) 
 	return &res, nil
 }
 
+// DeleteResource deletes a file resource (and possibly all its children in case of a collection). See `Storage.DeleteResource` doc.
 func (fs *FileStorage) DeleteResource(rpath string) error {
 	err := os.Remove(files.AbsPath(rpath))
 

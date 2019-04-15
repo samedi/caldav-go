@@ -4,11 +4,15 @@ import (
 	"net/http"
 )
 
-type handlerInterface interface {
+// HandlerInterface represents a CalDAV request handler. It has only one function `Handle`,
+// which is used to handle the CalDAV request and returns the response.
+type HandlerInterface interface {
 	Handle() *Response
 }
 
-func NewHandler(request *http.Request) handlerInterface {
+// NewHandler returns a new CalDAV request handler object based on the provided request.
+// With the returned request handler, you can call `Handle()` to handle the request.
+func NewHandler(request *http.Request) HandlerInterface {
 	response := NewResponse()
 
 	switch request.Method {

@@ -16,12 +16,12 @@ type headers struct {
 	http.Header
 }
 
-func (this headers) IsDeep() bool {
-	depth := this.Get(HD_DEPTH)
+func (h headers) IsDeep() bool {
+	depth := h.Get(HD_DEPTH)
 	return (depth == HD_DEPTH_DEEP)
 }
 
-func (this headers) IsMinimal() bool {
-	prefer := this.Get(HD_PREFER)
+func (h headers) IsMinimal() bool {
+	prefer := h.Get(HD_PREFER)
 	return (prefer == HD_PREFER_MINIMAL)
 }

@@ -81,8 +81,8 @@ type reportFilterXML struct {
 	InnerContent string `xml:",innerxml"`
 }
 
-func (this reportFilterXML) toString() string {
-	return fmt.Sprintf("<%s>%s</%s>", this.XMLName.Local, this.InnerContent, this.XMLName.Local)
+func (rfXml reportFilterXML) toString() string {
+	return fmt.Sprintf("<%s>%s</%s>", rfXml.XMLName.Local, rfXml.InnerContent, rfXml.XMLName.Local)
 }
 
 // Wraps a resource that has to be reported, either fetched by filters or by a list.
