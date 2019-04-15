@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+// Response represents the handled CalDAV response. Used this when one needs to proxy the generated
+// response before being sent back to the client.
 type Response struct {
 	Status int
 	Header http.Header
@@ -13,53 +15,58 @@ type Response struct {
 	Error  error
 }
 
+// NewResponse initializes a new response object.
 func NewResponse() *Response {
 	return &Response{
 		Header: make(http.Header),
 	}
 }
 
-func (this *Response) Set(status int, body string) *Response {
-	this.Status = status
-	this.Body = body
+// Set sets the the status and body of the response.
+func (r *Response) Set(status int, body string) *Response {
+	r.Status = status
+	r.Body = body
 
-	return this
+	return r
 }
 
-func (this *Response) SetHeader(key, value string) *Response {
-	this.Header.Set(key, value)
+// SetHeader adds a header to the response.
+func (r *Response) SetHeader(key, value string) *Response {
+	r.Header.Set(key, value)
 
-	return this
+	return r
 }
 
-func (this *Response) SetError(err error) *Response {
-	this.Error = err
+// SetError sets the response as an error. It inflects the response status based on the provided error.
+func (r *Response) SetError(err error) *Response {
+	r.Error = err
 
 	switch err {
 	case errs.ResourceNotFoundError:
-		this.Status = http.StatusNotFound
+		r.Status = http.StatusNotFound
 	case errs.UnauthorizedError:
-		this.Status = http.StatusUnauthorized
+		r.Status = http.StatusUnauthorized
 	case errs.ForbiddenError:
-		this.Status = http.StatusForbidden
+		r.Status = http.StatusForbidden
 	default:
-		this.Status = http.StatusInternalServerError
+		r.Status = http.StatusInternalServerError
 	}
 
-	return this
+	return r
 }
 
-func (this *Response) Write(writer http.ResponseWriter) {
-	if this.Error == errs.UnauthorizedError {
-		this.SetHeader("WWW-Authenticate", `Basic realm="Restricted"`)
+// Write writes the response back to the client using the provided `ResponseWriter`.
+func (r *Response) Write(writer http.ResponseWriter) {
+	if r.Error == errs.UnauthorizedError {
+		r.SetHeader("WWW-Authenticate", `Basic realm="Restricted"`)
 	}
 
-	for key, values := range this.Header {
+	for key, values := range r.Header {
 		for _, value := range values {
 			writer.Header().Set(key, value)
 		}
 	}
 
-	writer.WriteHeader(this.Status)
-	io.WriteString(writer, this.Body)
+	writer.WriteHeader(r.Status)
+	io.WriteString(writer, r.Body)
 }

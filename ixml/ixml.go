@@ -46,6 +46,7 @@ var (
 	SUPPORTED_CALENDAR_COMPONENT_SET_TG = xml.Name{CALDAV_NS, "supported-calendar-component-set"}
 )
 
+// Namespaces returns the default XML namespaces in for CalDAV contents.
 func Namespaces() string {
 	bf := new(lib.StringBuffer)
 	bf.Write(`xmlns:%s="%s" `, NS_PREFIXES[DAV_NS], DAV_NS)
