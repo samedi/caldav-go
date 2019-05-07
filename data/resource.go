@@ -2,14 +2,13 @@ package data
 
 import (
 	"fmt"
+	"github.com/laurent22/ical-go/ical"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/laurent22/ical-go"
 
 	"github.com/samedi/caldav-go/files"
 	"github.com/samedi/caldav-go/lib"
@@ -41,6 +40,11 @@ type ResourceAdapter interface {
 	GetContent() string
 	GetContentSize() int64
 	GetModTime() time.Time
+}
+
+// ResourceComponenter returns all supported components as strings, such as vtodo vevent etc
+type ResourceComponenter interface {
+	GetSupportedComponents() []string
 }
 
 // ResourceRecurrence represents a recurrence for a resource.
@@ -280,6 +284,15 @@ func (r *Resource) GetOwnerPath() (string, bool) {
 	}
 
 	return "", false
+}
+
+// GetSupportedComponents returns the components supported by a store
+func (r *Resource) GetSupportedComponents() []string {
+	// We're checking if the storage adapter implements the interface to not break any implementations
+	if sc, ok := interface{}(r.adapter).(ResourceComponenter); ok {
+		return sc.GetSupportedComponents()
+	}
+	return []string{lib.VCALENDAR, lib.VEVENT}
 }
 
 // TODO: memoize
