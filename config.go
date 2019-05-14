@@ -17,3 +17,8 @@ func SetupStorage(stg data.Storage) {
 func SetupUser(username string) {
 	global.User = &data.CalUser{Name: username}
 }
+
+// SetupSupportedComponents sets all components which are supported by this storage implementation.
+func SetupSupportedComponents(components []string) {
+	global.SupportedComponents = components
+}

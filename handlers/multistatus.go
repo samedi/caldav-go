@@ -121,7 +121,7 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 			}
 		case ixml.SUPPORTED_CALENDAR_COMPONENT_SET_TG:
 			if resource.IsCollection() {
-				for _, component := range resource.GetSupportedComponents() {
+				for _, component := range global.SupportedComponents {
 					// TODO: use ixml somehow to build the below tag
 					compTag := fmt.Sprintf(`<C:comp name="%s"/>`, component)
 					pvalue.Contents = append(pvalue.Contents, compTag)

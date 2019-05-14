@@ -42,11 +42,6 @@ type ResourceAdapter interface {
 	GetModTime() time.Time
 }
 
-// ResourceComponenter returns all supported components as strings, such as vtodo vevent etc
-type ResourceComponenter interface {
-	GetSupportedComponents() []string
-}
-
 // ResourceRecurrence represents a recurrence for a resource.
 // NOTE: recurrences are not supported yet.
 type ResourceRecurrence struct {
@@ -284,15 +279,6 @@ func (r *Resource) GetOwnerPath() (string, bool) {
 	}
 
 	return "", false
-}
-
-// GetSupportedComponents returns the components supported by a store
-func (r *Resource) GetSupportedComponents() []string {
-	// We're checking if the storage adapter implements the interface to not break any implementations
-	if sc, ok := interface{}(r.adapter).(ResourceComponenter); ok {
-		return sc.GetSupportedComponents()
-	}
-	return []string{lib.VCALENDAR, lib.VEVENT}
 }
 
 // TODO: memoize
