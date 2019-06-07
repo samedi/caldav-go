@@ -176,6 +176,16 @@ The default storage used (if none is explicitly set) is the `data.FileStorage` w
 
 The resources can be of two types: collection and non-collection. A collection resource is basically a resource that has children resources, but does not have any data content. A non-collection resource is a resource that does not have children, but has data. In the case of a file storage, collections correspond to directories and non-collection to plain files. The data of a caldav resource is all the info that shows up in the calendar client, in the [iCalendar](https://en.wikipedia.org/wiki/ICalendar) format.
 
+### Configuration
+
+The current supported CalDAV components by this lib are `VCALENDAR` and `VEVENT`. If your server implementation supports more components, you can set this up like so:
+
+```go
+caldav.SetupSupportedComponents([]string{'VCALENDAR', 'VEVENT', 'VTODO'})
+```
+
+This data is used internally and returned in some client responses, e.g, in multistatus responses under the `<supported-calendar-component-set>` tag.
+
 ### Features
 
 Please check the **CHANGELOG** to see specific features that are currently implemented.
