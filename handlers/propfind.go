@@ -2,21 +2,15 @@ package handlers
 
 import (
 	"encoding/xml"
-	"github.com/samedi/caldav-go/global"
-	"net/http"
 )
 
 type propfindHandler struct {
-	request  *http.Request
-	response *Response
+	handlerData
 }
 
 func (ph propfindHandler) Handle() *Response {
-	requestBody := readRequestBody(ph.request)
-	header := headers{ph.request.Header}
-
 	// get the target resources based on the request URL
-	resources, err := global.Storage.GetResources(ph.request.URL.Path, header.IsDeep())
+	resources, err := ph.storage.GetResources(ph.requestPath, ph.headers.IsDeep())
 	if err != nil {
 		return ph.response.SetError(err)
 	}
@@ -30,10 +24,10 @@ func (ph propfindHandler) Handle() *Response {
 		Prop    XMLProp2 `xml:"DAV: prop"`
 	}
 	var requestXML XMLRoot2
-	xml.Unmarshal([]byte(requestBody), &requestXML)
+	xml.Unmarshal([]byte(ph.requestBody), &requestXML)
 
 	multistatus := &multistatusResp{
-		Minimal: header.IsMinimal(),
+		Minimal: ph.headers.IsMinimal(),
 	}
 	// for each href, build the multistatus responses
 	for _, resource := range resources {

@@ -2,23 +2,20 @@ package handlers
 
 import (
 	"github.com/samedi/caldav-go/errs"
-	"github.com/samedi/caldav-go/global"
 	"net/http"
 )
 
 type putHandler struct {
-	request  *http.Request
-	response *Response
+	handlerData
 }
 
 func (ph putHandler) Handle() *Response {
-	requestBody := readRequestBody(ph.request)
 	precond := requestPreconditions{ph.request}
 	success := false
 
 	// check if resource exists
-	resourcePath := ph.request.URL.Path
-	resource, found, err := global.Storage.GetShallowResource(resourcePath)
+	resourcePath := ph.requestPath
+	resource, found, err := ph.storage.GetShallowResource(resourcePath)
 	if err != nil && err != errs.ResourceNotFoundError {
 		return ph.response.SetError(err)
 	}
@@ -28,7 +25,7 @@ func (ph putHandler) Handle() *Response {
 	// 1. Item NOT FOUND and there is NO ETAG match header: CREATE a new item
 	if !found && !precond.IfMatchPresent() {
 		// create new event resource
-		resource, err = global.Storage.CreateResource(resourcePath, requestBody)
+		resource, err = ph.storage.CreateResource(resourcePath, ph.requestBody)
 		if err != nil {
 			return ph.response.SetError(err)
 		}
@@ -46,7 +43,7 @@ func (ph putHandler) Handle() *Response {
 		resourceEtag, _ := resource.GetEtag()
 		if found && precond.IfMatch(resourceEtag) && !precond.IfNoneMatch("*") {
 			// update resource
-			resource, err = global.Storage.UpdateResource(resourcePath, requestBody)
+			resource, err = ph.storage.UpdateResource(resourcePath, ph.requestBody)
 			if err != nil {
 				return ph.response.SetError(err)
 			}
