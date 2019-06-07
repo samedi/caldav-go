@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/yosssi/gohtml"
 )
 
 func AssertStr(target string, expectation string, t *testing.T) {
@@ -70,11 +72,14 @@ func AssertMultistatusXML(target, expectation string, t *testing.T) {
 		return strings.TrimSpace(xml)
 	}
 
-	target2 := cleanXML(target)
+	target2      := cleanXML(target)
 	expectation2 := cleanXML(expectation)
 
 	if target2 != expectation2 {
-		t.Error("Expected:", expectation2, "| Got:", target2, "\n ->", logFailedLine())
+		target3      := gohtml.Format(target2)
+		expectation3 := gohtml.Format(expectation2)
+
+		t.Error("\n== Expected XML ==\n\n", expectation3, "\n\n== Got XML ==\n\n", target3, "\n\n ->", logFailedLine())
 	}
 }
 

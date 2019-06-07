@@ -1,8 +1,10 @@
-hash: ff037054c7b689c20a4fd4368897b8998d6ffa31b0f3f4a79e523a132e6a9e94
-updated: 2018-04-04T08:38:45.523594-04:00
+hash: 4f780d577367092e3af0c952e95fb93615986fd28e0cdd6983a2ea902719f0b1
+updated: 2019-06-07T15:49:24.872589193+02:00
 imports:
 - name: github.com/beevik/etree
   version: af219c0c7ea1b67ec263c0b1b1b96d284a9181ce
 - name: github.com/laurent22/ical-go
   version: e4fec34929693e2a4ba299d16380c55bac3fb42c
+- name: github.com/yosssi/gohtml
+  version: 9b7db94d32d9901e7ad2488fddf91f7b9fcc36c8
 testImports: []
