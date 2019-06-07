@@ -178,15 +178,13 @@ The resources can be of two types: collection and non-collection. A collection r
 
 ### Configuration
 
-You can set the caldav types your storage engine supports like so:
+The current supported CalDAV components by this lib are `VCALENDAR` and `VEVENT`. If your server implementation supports more components, you can set this up like so:
 
 ```go
-caldav.SetupSupportedComponents([]string{lib.VCALENDAR, lib.VEVENT})
+caldav.SetupSupportedComponents([]string{'VCALENDAR', 'VEVENT', 'VTODO'})
 ```
 
-The default is `lib.VCALENDAR` and `lib.VEVENT`.
-
-`caldav-go` will report these supported types to the client.
+This data is used internally and returned in some client responses, e.g, in multistatus responses under the `<supported-calendar-component-set>` tag.
 
 ### Features
 
