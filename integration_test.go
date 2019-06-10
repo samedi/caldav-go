@@ -368,16 +368,7 @@ func TestPROPFIND(t *testing.T) {
 }
 
 func TestREPORT(t *testing.T) {
-	collection := "/test-data/report/"
-	r1Name := "123-456-789.ics"
-	r1Data := "BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT"
-	createResource(collection, r1Name, r1Data)
-	r2Name := "789-456-123.ics"
-	r2Data := "BEGIN:VEVENT\nSUMMARY:Watch movies\nEND:VEVENT"
-	createResource(collection, r2Name, r2Data)
-
-	// Test 1: when the URL path points to a collection and passing the list of hrefs in the body.
-	path := collection
+	createResource("/test-data/report/", "123-456-789.ics", "BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT")
 
 	reportXML := `
   <?xml version="1.0" encoding="UTF-8"?>
@@ -387,14 +378,9 @@ func TestREPORT(t *testing.T) {
       <C:calendar-data/>
     </D:prop>
     <D:href>/test-data/report/123-456-789.ics</D:href>
-    <D:href>/foo/bar</D:href>
-    <D:href>/test-data/report/789-456-123.ics</D:href>
-    <D:href>/test-data/report/000-000-000.ics</D:href>
   </C:calendar-multiget>
   `
 
-	// the response should contain only the hrefs that belong to the collection.
-	// the ones that do not belong are ignored.
 	expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
   <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
@@ -408,134 +394,12 @@ func TestREPORT(t *testing.T) {
         <D:status>HTTP/1.1 200 OK</D:status>
       </D:propstat>
     </D:response>
-    <D:response>
-      <D:href>/test-data/report/789-456-123.ics</D:href>
-      <D:propstat>
-        <D:prop>
-          <D:getetag>?</D:getetag>
-          <C:calendar-data>%s</C:calendar-data>
-        </D:prop>
-        <D:status>HTTP/1.1 200 OK</D:status>
-      </D:propstat>
-    </D:response>
-    <D:response>
-      <D:href>/test-data/report/000-000-000.ics</D:href>
-      <D:status>HTTP/1.1 404 Not Found</D:status>
-    </D:response>
   </D:multistatus>
-  `, ixml.EscapeText(r1Data), ixml.EscapeText(r2Data))
+  `, ixml.EscapeText("BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT"))
 
-	resp := doRequest("REPORT", path, reportXML, nil)
+	resp := doRequest("REPORT", "/test-data/report/", reportXML, nil)
 	respBody := readResponseBody(resp)
 	test.AssertMultistatusXML(respBody, expectedRespBody, t)
-
-	// Test 2: when the URL path points to an actual resource and using the same body as before
-	path = collection + r1Name
-
-	// the response should contain only the resource from the URL.
-	// the rest are ignored
-	expectedRespBody = fmt.Sprintf(`
-  <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-    <D:response>
-      <D:href>/test-data/report/123-456-789.ics</D:href>
-      <D:propstat>
-        <D:prop>
-          <D:getetag>?</D:getetag>
-          <C:calendar-data>%s</C:calendar-data>
-        </D:prop>
-        <D:status>HTTP/1.1 200 OK</D:status>
-      </D:propstat>
-    </D:response>
-  </D:multistatus>
-  `, ixml.EscapeText(r1Data))
-
-	resp = doRequest("REPORT", path, reportXML, nil)
-	respBody = readResponseBody(resp)
-	test.AssertMultistatusXML(respBody, expectedRespBody, t)
-
-	// Test 3: when the URL points to a collection and passing filter rules in the body
-	path = collection
-
-	reportXML = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
-    <D:prop>
-      <D:getetag/>
-    </D:prop>
-    <C:filter>
-      <C:comp-filter name="VCALENDAR">
-        <C:comp-filter name="VEVENT">
-          <C:prop-filter name="SUMMARY">
-            <C:text-match>FOO</C:text-match>
-          </C:prop-filter>
-        </C:comp-filter>
-      </C:comp-filter>
-    </C:filter>
-  </C:calendar-query>
-  `
-
-	createResource(collection, "football.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Football\nEND:VEVENT\nEND:VCALENDAR")
-	createResource(collection, "volleyball.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Volleyball\nEND:VEVENT\nEND:VCALENDAR")
-
-	expectedRespBody = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-    <D:response>
-      <D:href>/test-data/report/football.ics</D:href>
-      <D:propstat>
-        <D:prop>
-          <D:getetag>?</D:getetag>
-        </D:prop>
-        <D:status>HTTP/1.1 200 OK</D:status>
-      </D:propstat>
-    </D:response>
-  </D:multistatus>
-  `
-
-	resp = doRequest("REPORT", path, reportXML, nil)
-	respBody = readResponseBody(resp)
-	test.AssertMultistatusXML(respBody, expectedRespBody, t)
-
-	// Test 4: when making a request with a `Prefer` header
-
-	headers := make(map[string]string)
-	headers["Prefer"] = "return=minimal"
-
-	path = collection
-
-	reportXML = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
-    <D:prop>
-      <D:getetag/>
-      <unknown-property/>
-    </D:prop>
-    <D:href>/test-data/report/123-456-789.ics</D:href>
-  </C:calendar-multiget>
-  `
-
-	// the response should omit all the <propstat> nodes with status 404.
-	expectedRespBody = fmt.Sprintf(`
-  <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
-    <D:response>
-      <D:href>/test-data/report/123-456-789.ics</D:href>
-      <D:propstat>
-        <D:prop>
-          <D:getetag>?</D:getetag>
-        </D:prop>
-        <D:status>HTTP/1.1 200 OK</D:status>
-      </D:propstat>
-    </D:response>
-  </D:multistatus>`)
-
-	resp = doRequest("REPORT", path, reportXML, headers)
-	respBody = readResponseBody(resp)
-	test.AssertMultistatusXML(respBody, expectedRespBody, t)
-	if test.AssertInt(len(resp.Header["Preference-Applied"]), 1, t) {
-		test.AssertStr(resp.Header.Get("Preference-Applied"), "return=minimal", t)
-	}
 }
 
 // ================ FUNCS ========================

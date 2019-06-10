@@ -57,10 +57,10 @@ func AssertResourceData(rpath, expectation string, t *testing.T) {
 func AssertMultistatusXML(target, expectation string, t *testing.T) {
 	cleanXML := func(xml string) string {
 		cleanupMap := map[string]string{
-			`\r?\n`:                                        "",
-			`>[\s|\t]+<`:                                   "><",
-			`<D:getetag>[^<]+</D:getetag>`:                 `<D:getetag>?</D:getetag>`,
-			`<CS:getctag>[^<]+</CS:getctag>`:               `<CS:getctag>?</CS:getctag>`,
+			`\r?\n`:                          "",
+			`>[\s|\t]+<`:                     "><",
+			`<D:getetag>[^<]+</D:getetag>`:   `<D:getetag>?</D:getetag>`,
+			`<CS:getctag>[^<]+</CS:getctag>`: `<CS:getctag>?</CS:getctag>`,
 			`<D:getlastmodified>[^<]+</D:getlastmodified>`: `<D:getlastmodified>?</D:getlastmodified>`,
 		}
 
@@ -72,11 +72,11 @@ func AssertMultistatusXML(target, expectation string, t *testing.T) {
 		return strings.TrimSpace(xml)
 	}
 
-	target2      := cleanXML(target)
+	target2 := cleanXML(target)
 	expectation2 := cleanXML(expectation)
 
 	if target2 != expectation2 {
-		target3      := gohtml.Format(target2)
+		target3 := gohtml.Format(target2)
 		expectation3 := gohtml.Format(expectation2)
 
 		t.Error("\n== Expected XML ==\n\n", expectation3, "\n\n== Got XML ==\n\n", target3, "\n\n ->", logFailedLine())
@@ -86,10 +86,4 @@ func AssertMultistatusXML(target, expectation string, t *testing.T) {
 func logFailedLine() string {
 	pc, fn, line, _ := runtime.Caller(2)
 	return fmt.Sprintf("Failed in %s[%s:%d]", runtime.FuncForPC(pc).Name(), fn, line)
-}
-
-func panicerr(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
