@@ -128,6 +128,13 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 				}
 				pfound = true
 			}
+        case ixml.CALENDAR_COLOR_TG:
+            if resource.IsCollection() {
+                if (resource.HasProperty("VEVENT","COLOR")) {
+                    pvalue.Contents = append(pvalue.Contents, resource.GetPropertyValue("VEVENT","COLOR"))
+                    pfound = true
+                }
+            }
 		}
 
 		if !pfound {

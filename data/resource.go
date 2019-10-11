@@ -53,10 +53,13 @@ type Resource struct {
 func NewResource(resPath string, adp ResourceAdapter) Resource {
 	pClean := lib.ToSlashPath(resPath)
 	pSplit := strings.Split(strings.Trim(pClean, "/"), "/")
-
+    p := pClean
+    if (adp.IsCollection()) {
+        p+="/"
+    }
 	return Resource{
 		Name:      pSplit[len(pSplit)-1],
-		Path:      pClean,
+		Path:      p,
 		pathSplit: pSplit,
 		adapter:   adp,
 	}

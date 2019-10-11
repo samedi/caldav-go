@@ -13,12 +13,14 @@ const (
 	DAV_NS     = "DAV:"
 	CALDAV_NS  = "urn:ietf:params:xml:ns:caldav"
 	CALSERV_NS = "http://calendarserver.org/ns/"
+    APPLE_NS   = "http://apple.com/ns/ical/"
 )
 
 var NS_PREFIXES = map[string]string{
 	DAV_NS:     "D",
 	CALDAV_NS:  "C",
 	CALSERV_NS: "CS",
+    APPLE_NS:   "A",
 }
 
 var (
@@ -44,13 +46,15 @@ var (
 	RESOURCE_TYPE_TG                    = xml.Name{DAV_NS, "resourcetype"}
 	STATUS_TG                           = xml.Name{DAV_NS, "status"}
 	SUPPORTED_CALENDAR_COMPONENT_SET_TG = xml.Name{CALDAV_NS, "supported-calendar-component-set"}
+    CALENDAR_COLOR_TG                   = xml.Name{APPLE_NS, "calendar-color"}
 )
 
 func Namespaces() string {
 	bf := new(lib.StringBuffer)
 	bf.Write(`xmlns:%s="%s" `, NS_PREFIXES[DAV_NS], DAV_NS)
 	bf.Write(`xmlns:%s="%s" `, NS_PREFIXES[CALDAV_NS], CALDAV_NS)
-	bf.Write(`xmlns:%s="%s"`, NS_PREFIXES[CALSERV_NS], CALSERV_NS)
+	bf.Write(`xmlns:%s="%s" `, NS_PREFIXES[CALSERV_NS], CALSERV_NS)
+	bf.Write(`xmlns:%s="%s"`, NS_PREFIXES[APPLE_NS], APPLE_NS)
 
 	return bf.String()
 }
