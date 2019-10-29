@@ -29,7 +29,7 @@ func TestToXML(t *testing.T) {
 	ms.Minimal = false
 	expected := `
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/123</D:href>
       <D:propstat>
@@ -55,7 +55,7 @@ func TestToXML(t *testing.T) {
 	ms.Minimal = true
 	expected = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/123</D:href>
       <D:propstat>
@@ -80,7 +80,7 @@ func TestToXML(t *testing.T) {
 
 	expected = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/123</D:href>
       <D:propstat>
