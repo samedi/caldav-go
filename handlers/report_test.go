@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/samedi/caldav-go/ixml"
-	"github.com/samedi/caldav-go/test"
+	"github.com/ngradwohl/caldav-go/ixml"
+	"github.com/ngradwohl/caldav-go/test"
 )
 
 // Test 1: when the URL path points to a collection and passing the list of hrefs in the body.
@@ -42,7 +42,7 @@ func TestHandle1(t *testing.T) {
 	// the ones that do not belong are ignored.
 	expectedRespBody := fmt.Sprintf(`
 	<?xml version="1.0" encoding="UTF-8"?>
-	<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+	<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
 		<D:response>
 			<D:href>/test-data/report/123-456-789.ics</D:href>
 			<D:propstat>
@@ -105,7 +105,7 @@ func TestHandle2(t *testing.T) {
 	// The response should contain only the resource from the URL. The rest are ignored
 	expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/test-data/report/123-456-789.ics</D:href>
       <D:propstat>
@@ -160,7 +160,7 @@ func TestHandle3(t *testing.T) {
 
 	expectedRespBody := fmt.Sprintf(`
 	<?xml version="1.0" encoding="UTF-8"?>
-	<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+	<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
 		<D:response>
 			<D:href>/test-data/report/football.ics</D:href>
 			<D:propstat>
@@ -218,7 +218,7 @@ func TestHandle4(t *testing.T) {
 	// The response should omit all the <propstat> nodes with status 404.
 	expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/test-data/report/123-456-789.ics</D:href>
       <D:propstat>

@@ -3,10 +3,10 @@ package handlers
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/samedi/caldav-go/data"
-	"github.com/samedi/caldav-go/global"
-	"github.com/samedi/caldav-go/ixml"
-	"github.com/samedi/caldav-go/lib"
+	"github.com/ngradwohl/caldav-go/data"
+	"github.com/ngradwohl/caldav-go/global"
+	"github.com/ngradwohl/caldav-go/ixml"
+	"github.com/ngradwohl/caldav-go/lib"
 	"net/http"
 )
 
@@ -128,6 +128,13 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 				}
 				pfound = true
 			}
+        case ixml.CALENDAR_COLOR_TG:
+            if resource.IsCollection() {
+                if (resource.HasProperty("VEVENT","COLOR")) {
+                    pvalue.Contents = append(pvalue.Contents, resource.GetPropertyValue("VEVENT","COLOR"))
+                    pfound = true
+                }
+            }
 		}
 
 		if !pfound {

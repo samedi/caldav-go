@@ -1,4 +1,4 @@
-package: github.com/samedi/caldav-go
+package: github.com/ngradwohl/caldav-go
 import:
 - package: github.com/beevik/etree
 - package: github.com/laurent22/ical-go

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/samedi/caldav-go/ixml"
-	"github.com/samedi/caldav-go/test"
+	"github.com/ngradwohl/caldav-go/ixml"
+	"github.com/ngradwohl/caldav-go/test"
 )
 
 // ============= TESTS ======================
@@ -186,7 +186,7 @@ func TestPROPFIND(t *testing.T) {
   `
 	expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/test-data/propfind/123-456-789.ics</D:href>
       <D:propstat>
@@ -238,7 +238,7 @@ func TestPROPFIND(t *testing.T) {
   `
 	expectedRespBody = fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/test-data/propfind/123-456-789.ics</D:href>
       <D:propstat>
@@ -274,7 +274,7 @@ func TestPROPFIND(t *testing.T) {
 	// the response should omit all the <propstat> nodes with status 404.
 	expectedRespBody = fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/test-data/propfind/123-456-789.ics</D:href>
       <D:propstat>
@@ -313,9 +313,9 @@ func TestPROPFIND(t *testing.T) {
 
 	expectedRespBody = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
-      <D:href>/test-data/propfind</D:href>
+      <D:href>/test-data/propfind/</D:href>
       <D:propstat>
         <D:prop>
           <D:getcontenttype>text/calendar</D:getcontenttype>
@@ -335,9 +335,9 @@ func TestPROPFIND(t *testing.T) {
 
 	expectedRespBody = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
-      <D:href>/test-data/propfind</D:href>
+      <D:href>/test-data/propfind/</D:href>
       <D:propstat>
         <D:prop>
           <D:getcontenttype>text/calendar</D:getcontenttype>
@@ -383,7 +383,7 @@ func TestREPORT(t *testing.T) {
 
 	expectedRespBody := fmt.Sprintf(`
   <?xml version="1.0" encoding="UTF-8"?>
-  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/">
+  <D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:A="http://apple.com/ns/ical/">
     <D:response>
       <D:href>/test-data/report/123-456-789.ics</D:href>
       <D:propstat>

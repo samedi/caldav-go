@@ -327,6 +327,236 @@ func TestPropertyParams(t *testing.T) {
 	}
 }
 
+func TestRecurrenceOnce(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+	adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000Z
+  DTEND:20160914T180000Z
+  RRULE: FREQ=DAILY;COUNT=1
+  END:VEVENT
+  END:VCALENDAR
+  `
+  if len(res.Recurrences()) != 1 {
+    t.Error("Expected 1 Recurrencies got, ", len(res.Recurrences()))
+  }
+
+    if (res.Recurrences()[0].StartTime != time.Date(2016,9,15,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[0].StartTime);
+    }
+}
+
+func TestRecurrenceCountInterval(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+	adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000Z
+  DTEND:20160914T180000Z
+  RRULE: FREQ=DAILY;COUNT=2;INTERVAL=2
+  END:VEVENT
+  END:VCALENDAR
+  `
+  if len(res.Recurrences()) != 2 {
+    t.Error("Expected 2 Recurrencies got, ", len(res.Recurrences()))
+  }
+
+    if (res.Recurrences()[1].StartTime != time.Date(2016,9,18,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[1].StartTime);
+    }
+}
+
+func TestRecurrenceCountYearly(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+	adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000Z
+  DTEND:20160914T180000Z
+  RRULE: FREQ=YEARLY;COUNT=2;INTERVAL=2
+  END:VEVENT
+  END:VCALENDAR
+  `
+  if len(res.Recurrences()) != 2 {
+    t.Error("Expected 2 Recurrencies got, ", len(res.Recurrences()))
+  }
+
+    if (res.Recurrences()[1].StartTime != time.Date(2020,9,14,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[1].StartTime);
+    }
+}
+
+
+func TestRecurrenceCountMonthly(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+	adp.contentData = `
+  BEGIN:VCALENDAR
+  BEGIN:VEVENT
+  DTSTART:20160914T170000Z
+  DTEND:20160914T180000Z
+  RRULE: FREQ=MONTHLY;COUNT=2;INTERVAL=2
+  END:VEVENT
+  END:VCALENDAR
+  `
+  if len(res.Recurrences()) != 2 {
+    t.Error("Expected 2 Recurrencies got, ", len(res.Recurrences()))
+  }
+
+    if (res.Recurrences()[1].StartTime != time.Date(2017,1,14,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[1].StartTime);
+    }
+}
+
+func TestRecurrenceUntil(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20160914T170000Z
+    DTEND:20160914T180000Z
+    RRULE: FREQ=WEEKLY; UNTIL=20160929T000000Z
+    END:VEVENT
+    END:VCALENDAR
+    `
+    if len(res.Recurrences()) != 2 {
+        t.Error("Expected 2 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[1].StartTime != time.Date(2016,9,28,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[1].StartTime);
+    }
+}
+
+func TestByWeekday(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=WEEKLY;BYDAY=MO;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,1,28,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayNum(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=WEEKLY;BYDAY=1;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,1,28,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayPos(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=MONTHLY;BYDAY=2MO;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+
+    fmt.Println(res.Recurrences())
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,4,8,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayPosParam(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=MONTHLY;BYDAY=MO;BYPOS=2;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+
+    fmt.Println(res.Recurrences())
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,4,8,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+func TestByWeekdayPosNeg(t *testing.T) {
+	adp := new(FakeResourceAdapter)
+	res := NewResource("/foo", adp)
+
+    adp.contentData = `
+    BEGIN:VCALENDAR
+    BEGIN:VEVENT
+    DTSTART:20190101T170000Z
+    DTEND:20190101T180000Z
+    RRULE: FREQ=MONTHLY;BYDAY=-1MO;COUNT=3
+    END:VEVENT
+    END:VCALENDAR
+    `
+
+    fmt.Println(res.Recurrences())
+    if len(res.Recurrences()) != 3 {
+        t.Error("Expected 3 Recurrencies got, ", res.Recurrences())
+    }
+
+    if (res.Recurrences()[2].StartTime != time.Date(2019,4,29,17,0,0,0, time.UTC)) {
+        t.Error("Unexpected Start time, ", res.Recurrences()[2].StartTime);
+    }
+}
+
+
+
+
 type FakeResourceAdapter struct {
 	collection  bool
 	etag        string

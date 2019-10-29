@@ -3,8 +3,8 @@ package test
 import (
 	"os"
 
-	"github.com/samedi/caldav-go/data"
-	"github.com/samedi/caldav-go/global"
+	"github.com/ngradwohl/caldav-go/data"
+	"github.com/ngradwohl/caldav-go/global"
 )
 
 // Creates a fake storage to be used in unit tests.
