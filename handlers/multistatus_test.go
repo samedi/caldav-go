@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"github.com/samedi/caldav-go/test"
+	"github.com/ngradwohl/caldav-go/test"
 )
 
 // Tests the XML serialization when the option to return a minimal content is set or not.

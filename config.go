@@ -1,8 +1,8 @@
 package caldav
 
 import (
-	"github.com/samedi/caldav-go/data"
-	"github.com/samedi/caldav-go/global"
+	"github.com/ngradwohl/caldav-go/data"
+	"github.com/ngradwohl/caldav-go/global"
 )
 
 // SetupStorage sets the storage to be used by the server. The storage is where the resources data will be fetched from.

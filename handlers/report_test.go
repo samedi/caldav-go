@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/samedi/caldav-go/ixml"
-	"github.com/samedi/caldav-go/test"
+	"github.com/ngradwohl/caldav-go/ixml"
+	"github.com/ngradwohl/caldav-go/test"
 )
 
 // Test 1: when the URL path points to a collection and passing the list of hrefs in the body.
