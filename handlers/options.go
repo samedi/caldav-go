@@ -5,7 +5,7 @@ import (
 )
 
 type optionsHandler struct {
-	response *Response
+	handlerData
 }
 
 // Returns the allowed methods and the DAV features implemented by the current server.

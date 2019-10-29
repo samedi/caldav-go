@@ -49,6 +49,7 @@ var (
     CALENDAR_COLOR_TG                   = xml.Name{APPLE_NS, "calendar-color"}
 )
 
+// Namespaces returns the default XML namespaces in for CalDAV contents.
 func Namespaces() string {
 	bf := new(lib.StringBuffer)
 	bf.Write(`xmlns:%s="%s" `, NS_PREFIXES[DAV_NS], DAV_NS)

@@ -7,21 +7,16 @@ import (
 	"strings"
 
 	"github.com/samedi/caldav-go/data"
-	"github.com/samedi/caldav-go/global"
 	"github.com/samedi/caldav-go/ixml"
 )
 
 type reportHandler struct {
-	request  *http.Request
-	response *Response
+	handlerData
 }
 
 // See more at RFC4791#section-7.1
 func (rh reportHandler) Handle() *Response {
-	requestBody := readRequestBody(rh.request)
-	header := headers{rh.request.Header}
-
-	urlResource, found, err := global.Storage.GetShallowResource(rh.request.URL.Path)
+	urlResource, found, err := rh.storage.GetShallowResource(rh.requestPath)
 	if !found {
 		return rh.response.Set(http.StatusNotFound, "")
 	} else if err != nil {
@@ -30,7 +25,7 @@ func (rh reportHandler) Handle() *Response {
 
 	// read body string to xml struct
 	var requestXML reportRootXML
-	xml.Unmarshal([]byte(requestBody), &requestXML)
+	xml.Unmarshal([]byte(rh.requestBody), &requestXML)
 
 	// The resources to be reported are fetched by the type of the request. If it is
 	// a `calendar-multiget`, the resources come based on a set of `hrefs` in the request body.
@@ -50,7 +45,7 @@ func (rh reportHandler) Handle() *Response {
 	}
 
 	multistatus := &multistatusResp{
-		Minimal: header.IsMinimal(),
+		Minimal: rh.headers.IsMinimal(),
 	}
 	// for each href, build the multistatus responses
 	for _, r := range resourcesToReport {
@@ -81,8 +76,8 @@ type reportFilterXML struct {
 	InnerContent string `xml:",innerxml"`
 }
 
-func (this reportFilterXML) toString() string {
-	return fmt.Sprintf("<%s>%s</%s>", this.XMLName.Local, this.InnerContent, this.XMLName.Local)
+func (rfXml reportFilterXML) toString() string {
+	return fmt.Sprintf("<%s>%s</%s>", rfXml.XMLName.Local, rfXml.InnerContent, rfXml.XMLName.Local)
 }
 
 // Wraps a resource that has to be reported, either fetched by filters or by a list.
@@ -107,7 +102,7 @@ func (rh reportHandler) fetchResourcesByFilters(origin *data.Resource, filtersXM
 
 	if origin.IsCollection() {
 		filters, _ := data.ParseResourceFilters(filtersXML.toString())
-		resources, err := global.Storage.GetResourcesByFilters(origin.Path, filters)
+		resources, err := rh.storage.GetResourcesByFilters(origin.Path, filters)
 
 		if err != nil {
 			return reps, err
@@ -135,7 +130,7 @@ func (rh reportHandler) fetchResourcesByList(origin *data.Resource, requestedPat
 	reps := []reportRes{}
 
 	if origin.IsCollection() {
-		resources, err := global.Storage.GetResourcesByList(requestedPaths)
+		resources, err := rh.storage.GetResourcesByList(requestedPaths)
 
 		if err != nil {
 			return reps, err

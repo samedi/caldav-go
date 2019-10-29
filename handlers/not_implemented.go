@@ -5,7 +5,7 @@ import (
 )
 
 type notImplementedHandler struct {
-	response *Response
+	handlerData
 }
 
 func (h notImplementedHandler) Handle() *Response {

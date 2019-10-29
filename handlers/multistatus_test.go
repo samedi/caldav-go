@@ -10,18 +10,17 @@ import (
 // Tests the XML serialization when the option to return a minimal content is set or not.
 func TestToXML(t *testing.T) {
 	ms := new(multistatusResp)
-	propstats := msPropstats{
-		200: msProps{
-			msProp{Tag: xml.Name{Local: "getetag"}},
-		},
-		404: msProps{
-			msProp{Tag: xml.Name{Local: "owner"}},
-		},
-	}
 	ms.Responses = append(ms.Responses, msResponse{
 		Href:      "/123",
 		Found:     true,
-		Propstats: propstats,
+		Propstats: msPropstats{
+			200: msProps{
+				msProp{Tag: xml.Name{Local: "getetag"}},
+			},
+			404: msProps{
+				msProp{Tag: xml.Name{Local: "owner"}},
+			},
+		},
 	})
 
 	// First test when the minimal flag is false. It should return
@@ -95,7 +94,7 @@ func TestToXML(t *testing.T) {
     </D:response>
   </D:multistatus>`
 
-	delete(propstats, 200)
+	delete(ms.Responses[0].Propstats, 200)
 
 	test.AssertMultistatusXML(ms.ToXML(), expected, t)
 }

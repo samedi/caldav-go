@@ -1,18 +1,16 @@
 package handlers
 
 import (
-	"github.com/samedi/caldav-go/global"
 	"net/http"
 )
 
 type getHandler struct {
-	request     *http.Request
-	response    *Response
+	handlerData
 	onlyHeaders bool
 }
 
 func (gh getHandler) Handle() *Response {
-	resource, _, err := global.Storage.GetResource(gh.request.URL.Path)
+	resource, _, err := gh.storage.GetResource(gh.requestPath)
 	if err != nil {
 		return gh.response.SetError(err)
 	}

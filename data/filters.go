@@ -10,10 +10,6 @@ import (
 	"github.com/samedi/caldav-go/lib"
 )
 
-// ================ FILTERS ==================
-// Filters are a set of rules used to retrieve a range of resources. It is used primarily
-// on REPORT requests and is described in details here (RFC4791#7.8).
-
 const (
 	TAG_FILTER         = "filter"
 	TAG_COMP_FILTER    = "comp-filter"
@@ -23,10 +19,13 @@ const (
 	TAG_TEXT_MATCH     = "text-match"
 	TAG_IS_NOT_DEFINED = "is-not-defined"
 
-	// from the RFC, the time range `start` and `end` attributes MUST be in UTC and in this specific format
+	// From the RFC, the time range `start` and `end` attributes MUST be in UTC and in this specific format
 	FILTER_TIME_FORMAT = "20060102T150405Z"
 )
 
+// ResourceFilter represents filters to filter out resources.
+// Filters are basically a set of rules used to retrieve a range of resources.
+// It is used primarily on REPORT requests and is described in details in RFC4791#7.8.
 type ResourceFilter struct {
 	name      string
 	text      string
@@ -35,7 +34,7 @@ type ResourceFilter struct {
 	etreeElem *etree.Element   // holds the parsed XML node/tag as an `etree` element.
 }
 
-// This function creates a new filter object from a piece of XML string.
+// ParseResourceFilters initializes a new `ResourceFilter` object from a snippet of XML string.
 func ParseResourceFilters(xml string) (*ResourceFilter, error) {
 	doc := etree.NewDocument()
 	if err := doc.ReadFromString(xml); err != nil {
@@ -73,10 +72,12 @@ func newFilterFromEtreeElem(elem *etree.Element) ResourceFilter {
 	return filter
 }
 
+// Attr searches an attribute by its name in the list of filter attributes and returns it.
 func (f *ResourceFilter) Attr(attrName string) string {
 	return f.attrs[attrName]
 }
 
+// TimeAttr searches and returns a filter attribute as a `time.Time` object.
 func (f *ResourceFilter) TimeAttr(attrName string) *time.Time {
 
 	t, err := time.Parse(FILTER_TIME_FORMAT, f.attrs[attrName])
@@ -94,6 +95,7 @@ func (f *ResourceFilter) GetTimeRangeFilter() *ResourceFilter {
 	return f.findChild(TAG_TIME_RANGE, true)
 }
 
+// Match returns whether a provided resource matches the filters.
 func (f *ResourceFilter) Match(target ResourceInterface) bool {
 	if f.name == TAG_FILTER {
 		return f.rootFilterMatch(target)

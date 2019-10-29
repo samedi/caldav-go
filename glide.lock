@@ -1,8 +1,15 @@
-hash: ff037054c7b689c20a4fd4368897b8998d6ffa31b0f3f4a79e523a132e6a9e94
-updated: 2018-04-04T08:38:45.523594-04:00
+hash: f35dd88140d6d029e1e14352bfca5b72b6a7d5d99dbd991e6085a2fb062a46d9
+updated: 2019-06-10T11:38:46.099961846+02:00
 imports:
 - name: github.com/beevik/etree
   version: af219c0c7ea1b67ec263c0b1b1b96d284a9181ce
 - name: github.com/laurent22/ical-go
   version: e4fec34929693e2a4ba299d16380c55bac3fb42c
+- name: github.com/yosssi/gohtml
+  version: 9b7db94d32d9901e7ad2488fddf91f7b9fcc36c8
+- name: golang.org/x/net
+  version: c92cdcb05f66ce5b61460e23498d2dc5fcf69aaf
+  subpackages:
+  - html
+  - html/atom
 testImports: []

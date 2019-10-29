@@ -2,3 +2,7 @@ package: github.com/samedi/caldav-go
 import:
 - package: github.com/beevik/etree
 - package: github.com/laurent22/ical-go
+- package: github.com/yosssi/gohtml
+- package: golang.org/x/net
+  subpackages:
+  - html

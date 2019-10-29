@@ -1,20 +1,18 @@
 package handlers
 
 import (
-	"github.com/samedi/caldav-go/global"
 	"net/http"
 )
 
 type deleteHandler struct {
-	request  *http.Request
-	response *Response
+	handlerData
 }
 
 func (dh deleteHandler) Handle() *Response {
 	precond := requestPreconditions{dh.request}
 
 	// get the event from the storage
-	resource, _, err := global.Storage.GetShallowResource(dh.request.URL.Path)
+	resource, _, err := dh.storage.GetShallowResource(dh.requestPath)
 	if err != nil {
 		return dh.response.SetError(err)
 	}
@@ -31,7 +29,7 @@ func (dh deleteHandler) Handle() *Response {
 	}
 
 	// delete event after pre-condition passed
-	err = global.Storage.DeleteResource(resource.Path)
+	err = dh.storage.DeleteResource(resource.Path)
 	if err != nil {
 		return dh.response.SetError(err)
 	}
